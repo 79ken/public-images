@@ -29,7 +29,7 @@
 
         .container {
             width: 100%;
-            max-width: 1100px;
+            max-width: 1150px;
             background: var(--card-bg);
             padding: 30px;
             border-radius: 16px;
@@ -91,12 +91,18 @@
 
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
             margin-bottom: 30px;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 992px) {
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 576px) {
             .dashboard {
                 grid-template-columns: 1fr;
             }
@@ -105,7 +111,7 @@
         .dash-card {
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 20px;
+            padding: 18px 10px;
             text-align: center;
             background: #fafafa;
         }
@@ -122,13 +128,13 @@
         }
 
         .dash-label {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-muted);
             margin-bottom: 5px;
         }
 
         .dash-value {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
             color: var(--primary);
         }
@@ -141,7 +147,7 @@
         }
 
         th, td {
-            padding: 14px 8px;
+            padding: 14px 6px;
             text-align: right;
             border-bottom: 1px solid var(--border);
             white-space: nowrap;
@@ -166,7 +172,16 @@
             font-size: 14px;
         }
 
-        .input-qty:focus {
+        .input-qty-large {
+            width: 125px;
+            padding: 6px 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .input-qty:focus, .input-qty-large:focus {
             border-color: var(--primary);
             outline: none;
         }
@@ -194,7 +209,7 @@
 
 <div class="container">
     <h1>나스닥 1.8배 밸런스 자산 관리기 Pro</h1>
-    <div class="subtitle">실시간 시세 연동 및 내부 리밸런싱 가이드 시스템 (40 : 40 : 20)</div>
+    <div class="subtitle">실시간 시세 연동 및 통합 자산 마스터 관리 시스템 (주식 엔진 비율 40 : 40 : 20)</div>
 
     <div class="header-actions">
         <div class="price-status" id="updateTime">시세 로드 중...</div>
@@ -206,13 +221,17 @@
 
     <div class="dashboard">
         <div class="dash-card">
-            <div class="dash-label">실시간 포트폴리오 배수</div>
+            <div class="dash-label">주식 엔진 배수 (타겟 1.80)</div>
             <div class="dash-value" id="currentLeverage">-.--</div>
         </div>
         <div class="dash-card">
+            <div class="dash-label">전체 실질 배수 (현금 버퍼 포함)</div>
+            <div class="dash-value" id="effectiveLeverage" style="color: #0f172a;">-.--</div>
+        </div>
+        <div class="dash-card">
             <div class="dash-label">나스닥(QQQ) 실시간 MDD</div>
-            <div class="dash-value" id="nasdaqMdd" style="color: var(--text-main);">-.--%</div>
-            <div class="dash-label" id="nasdaqPeak" style="font-size: 11px; margin-top: 5px; color: var(--text-muted);">(최고가 로드 중...)</div>
+            <div class="dash-value" id="nasdaqMdd" style="color: var(--text-main); font-size: 24px;">-.--%</div>
+            <div class="dash-label" id="nasdaqPeak" style="font-size: 10px; margin-top: 3px; color: var(--text-muted);">(최고가 로드 중...)</div>
         </div>
         <div class="dash-card">
             <div class="dash-label">실시간 적용 환율</div>
@@ -229,11 +248,11 @@
             <tr>
                 <th>자산명</th>
                 <th>현재가 ($)</th>
-                <th>보유 수량</th>
+                <th>보유 수량 / 원화 입력</th>
                 <th>평가 금액 ($)</th>
                 <th>목표 금액 ($)</th>
                 <th>원화 금액</th>
-                <th>현재 비중</th>
+                <th>전체 비중</th>
                 <th>조정 필요 ($)</th>
                 <th>주문 가이드</th>
             </tr>
@@ -272,8 +291,19 @@
                 <td id="adjTqqq">-</td>
                 <td id="guideTqqq" class="guide-text">-</td>
             </tr>
+            <tr style="background-color: #fdfdfd; border-top: 2px solid var(--border);">
+                <td>💵 현금 예수금 (₩)</td>
+                <td>-</td>
+                <td><input type="number" id="cashWon" class="input-qty-large" value="0" min="0" step="1000000" oninput="updateData()"> ₩</td>
+                <td id="curCash">$0</td>
+                <td>-</td>
+                <td id="wonCash">₩0</td>
+                <td id="weightCash">-</td>
+                <td>-</td>
+                <td>-</td>
+            </tr>
             <tr class="total-row">
-                <td>합계</td>
+                <td>통합 총자산</td>
                 <td>-</td>
                 <td>-</td>
                 <td id="totalAmt">$0</td>
@@ -384,117 +414,141 @@
         const pQqqm = urlParams.get('qqqm');
         const pQld = urlParams.get('qld');
         const pTqqq = urlParams.get('tqqq');
+        const pCash = urlParams.get('cash');
 
-        if (pQqqm !== null || pQld !== null || pTqqq !== null) {
+        if (pQqqm !== null || pQld !== null || pTqqq !== null || pCash !== null) {
             if (pQqqm !== null) document.getElementById('qtyQqqm').value = pQqqm;
             if (pQld !== null) document.getElementById('qtyQld').value = pQld;
             if (pTqqq !== null) document.getElementById('qtyTqqq').value = pTqqq;
-            saveCurrentData(pQqqm || 0, pQld || 0, pTqqq || 0);
+            if (pCash !== null) document.getElementById('cashWon').value = pCash;
+            saveCurrentData(pQqqm || 0, pQld || 0, pTqqq || 0, pCash || 0);
         } else {
             const savedQqqmQty = localStorage.getItem('leverage_qty_qqqm');
             const savedQldQty = localStorage.getItem('leverage_qty_qld');
             const savedTqqqQty = localStorage.getItem('leverage_qty_tqqq');
+            const savedCashWon = localStorage.getItem('leverage_cash_won');
 
             if (savedQqqmQty !== null) document.getElementById('qtyQqqm').value = savedQqqmQty;
             if (savedQldQty !== null) document.getElementById('qtyQld').value = savedQldQty;
             if (savedTqqqQty !== null) document.getElementById('qtyTqqq').value = savedTqqqQty;
+            if (savedCashWon !== null) document.getElementById('cashWon').value = savedCashWon;
         }
     }
 
-    function saveCurrentData(qqqmQty, qldQty, tqqqQty) {
+    function saveCurrentData(qqqmQty, qldQty, tqqqQty, cashWon) {
         localStorage.setItem('leverage_qty_qqqm', qqqmQty);
         localStorage.setItem('leverage_qty_qld', qldQty);
         localStorage.setItem('leverage_qty_tqqq', tqqqQty);
+        localStorage.setItem('leverage_cash_won', cashWon);
     }
 
     function copySyncUrl() {
         const qtyQqqm = document.getElementById('qtyQqqm').value || 0;
         const qtyQld = document.getElementById('qtyQld').value || 0;
         const qtyTqqq = document.getElementById('qtyTqqq').value || 0;
+        const cashWon = document.getElementById('cashWon').value || 0;
 
         const baseUrl = window.location.origin + window.location.pathname;
-        const syncUrl = `${baseUrl}?qqqm=${qtyQqqm}&qld=${qtyQld}&tqqq=${qtyTqqq}`;
+        const syncUrl = `${baseUrl}?qqqm=${qtyQqqm}&qld=${qtyQld}&tqqq=${qtyTqqq}&cash=${cashWon}`;
 
         navigator.clipboard.writeText(syncUrl).then(() => {
-            alert("🔗 동기화 주소가 복사되었습니다!\n\n다른 PC나 스마트폰 브라우저에 이 주소로 접속 후 '북마크'를 해두시면 수량이 연동됩니다.");
+            alert("🔗 동기화 주소가 복사되었습니다!\n\n예수금 정보까지 포함된 주소입니다. 다른 브라우저에 접속 후 북마크하세요.");
         }).catch(err => {
             alert("링크 복사 실패: " + syncUrl);
         });
     }
 
-    // 3. 자산 종합 연산 코어 스크립트 (Pure 나스닥 1.8배 매핑)
+    // 3. 통합 자산 연산 엔진
     function updateData() {
         const qtyQqqm = parseFloat(document.getElementById('qtyQqqm').value) || 0;
         const qtyQld = parseFloat(document.getElementById('qtyQld').value) || 0;
         const qtyTqqq = parseFloat(document.getElementById('qtyTqqq').value) || 0;
+        const cashWon = parseFloat(document.getElementById('cashWon').value) || 0;
 
-        saveCurrentData(qtyQqqm, qtyQld, qtyTqqq);
+        saveCurrentData(qtyQqqm, qtyQld, qtyTqqq, cashWon);
 
         if (prices.QQQM === 0 || prices.QLD === 0 || prices.TQQQ === 0) return;
 
-        // 1) 평가 금액 ($)
+        const currentRate = prices.exchangeRate > 0 ? prices.exchangeRate : 1400;
+
+        // 1) 평가 금액 ($) 산출
         const qqqmVal = qtyQqqm * prices.QQQM;
         const qldVal = qtyQld * prices.QLD;
         const tqqqVal = qtyTqqq * prices.TQQQ;
-        const total = qqqmVal + qldVal + tqqqVal;
+        const cashValUSD = cashWon / currentRate; // 원화 예수금을 실시간 환율로 달러 역산
+
+        const stockTotal = qqqmVal + qldVal + tqqqVal; // 주식 엔진 총액
+        const overallTotalUSD = stockTotal + cashValUSD; // 현금 포함 통합 총액
 
         document.getElementById('curQqqm').innerText = '$' + Math.round(qqqmVal).toLocaleString();
         document.getElementById('curQld').innerText = '$' + Math.round(qldVal).toLocaleString();
         document.getElementById('curTqqq').innerText = '$' + Math.round(tqqqVal).toLocaleString();
-        document.getElementById('totalAmt').innerText = '$' + Math.round(total).toLocaleString();
+        document.getElementById('curCash').innerText = '$' + Math.round(cashValUSD).toLocaleString();
+        document.getElementById('totalAmt').innerText = '$' + Math.round(overallTotalUSD).toLocaleString();
 
-        if (total === 0) {
+        if (overallTotalUSD === 0) {
             document.getElementById('currentLeverage').innerText = "0.00";
-            document.getElementById('statusSignal').innerText = "보유 수량을 입력하시면 포트폴리오 진단이 시작됩니다.";
+            document.getElementById('effectiveLeverage').innerText = "0.00";
+            document.getElementById('statusSignal').innerText = "보유 자산을 입력하시면 통합 포트폴리오 진단이 시작됩니다.";
             return;
         }
 
-        // 2) 목표 금액 ($) - 40 : 40 : 20
-        const targetQqqm = total * 0.40;
-        const targetQld = total * 0.40;
-        const targetTqqq = total * 0.20;
+        // 2) 주식 엔진 내부의 목표 금액 ($) 산출 - 40 : 40 : 20 원칙 적용
+        const targetQqqm = stockTotal * 0.40;
+        const targetQld = stockTotal * 0.40;
+        const targetTqqq = stockTotal * 0.20;
         document.getElementById('targetQqqm').innerText = '$' + Math.round(targetQqqm).toLocaleString();
         document.getElementById('targetQld').innerText = '$' + Math.round(targetQld).toLocaleString();
         document.getElementById('targetTqqq').innerText = '$' + Math.round(targetTqqq).toLocaleString();
-        document.getElementById('targetTotal').innerText = '$' + Math.round(total).toLocaleString();
+        document.getElementById('targetTotal').innerText = '$' + Math.round(stockTotal).toLocaleString();
 
         // 3) 원화 금액 환산
-        const currentRate = prices.exchangeRate > 0 ? prices.exchangeRate : 1400;
         const wonQqqm = qqqmVal * currentRate;
         const wonQld = qldVal * currentRate;
         const wonTqqq = tqqqVal * currentRate;
-        const totalWon = total * currentRate;
+        const overallTotalWon = (stockTotal * currentRate) + cashWon;
+
         document.getElementById('wonQqqm').innerText = '₩' + Math.round(wonQqqm).toLocaleString();
         document.getElementById('wonQld').innerText = '₩' + Math.round(wonQld).toLocaleString();
         document.getElementById('wonTqqq').innerText = '₩' + Math.round(wonTqqq).toLocaleString();
-        document.getElementById('totalWon').innerText = '₩' + Math.round(totalWon).toLocaleString();
+        document.getElementById('wonCash').innerText = '₩' + Math.round(cashWon).toLocaleString();
+        document.getElementById('totalWon').innerText = '₩' + Math.round(overallTotalWon).toLocaleString();
 
-        // 4) 현재 비중
-        const wQqqm = qqqmVal / total;
-        const wQld = qldVal / total;
-        const wTqqq = tqqqVal / total;
+        // 4) 통합 전체 비중 산출
+        const wQqqm = qqqmVal / overallTotalUSD;
+        const wQld = qldVal / overallTotalUSD;
+        const wTqqq = tqqqVal / overallTotalUSD;
+        const wCash = cashValUSD / overallTotalUSD;
+
         document.getElementById('weightQqqm').innerText = (wQqqm * 100).toFixed(1) + '%';
         document.getElementById('weightQld').innerText = (wQld * 100).toFixed(1) + '%';
         document.getElementById('weightTqqq').innerText = (wTqqq * 100).toFixed(1) + '%';
+        document.getElementById('weightCash').innerText = (wCash * 100).toFixed(1) + '%';
 
-        // 5) 조정 필요 ($)
+        // 5) 주식 엔진 내부 리밸런싱 조정 필요 ($) 산출
         const adjQqqm = targetQqqm - qqqmVal;
         const adjQld = targetQld - qldVal;
         const adjTqqq = targetTqqq - tqqqVal;
         document.getElementById('adjQqqm').innerText = '$' + Math.round(adjQqqm).toLocaleString();
         document.getElementById('adjQld').innerText = '$' + Math.round(adjQld).toLocaleString();
         document.getElementById('adjTqqq').innerText = '$' + Math.round(adjTqqq).toLocaleString();
+        document.getElementById('adjTotal').innerText = '$' + Math.round(targetQqqm + targetQld + targetTqqq - stockTotal).toLocaleString();
 
-        // 6) 주문 가이드
+        // 6) 주문 가이드 바인딩
         renderGuide('guideQqqm', adjQqqm);
         renderGuide('guideQld', adjQld);
         renderGuide('guideTqqq', adjTqqq);
 
-        // 실시간 복합 배수 계산
-        const leverage = (wQqqm * 1) + (wQld * 2) + (wTqqq * 3);
-        document.getElementById('currentLeverage').innerText = leverage.toFixed(2);
+        // 배수 시스템 연산
+        // 🚨 주식 타격대 자체의 순수 레버리지 배수 (4:4:2 유지 체크용)
+        const stockLeverage = stockTotal > 0 ? ((qqqmVal * 1) + (qldVal * 2) + (tqqqVal * 3)) / stockTotal : 0;
+        document.getElementById('currentLeverage').innerText = stockLeverage.toFixed(2);
 
-        // QQQ MDD 트래킹
+        // 💵 현금 버퍼가 섞인 전체 자산 기준 실질 변동성 배수 (Real Effective Leverage)
+        const effectiveLeverage = ((qqqmVal * 1) + (qldVal * 2) + (tqqqVal * 3)) / overallTotalUSD;
+        document.getElementById('effectiveLeverage').innerText = effectiveLeverage.toFixed(2);
+
+        // QQQ MDD 트래커
         let qqqMdd = 0;
         let mddStatusText = "";
         if (prices.QQQ > 0 && prices.QQQ_high > 0) {
@@ -505,26 +559,26 @@
 
             if (qqqMdd <= -15 && qqqMdd >= -20) {
                 mddEl.style.color = "var(--warning)";
-                mddStatusText = " 🎯 [알림] 나스닥 MDD가 1차 리밸런싱 타겟 구간(-15% ~ -20%)에 진입했습니다!";
+                mddStatusText = " 🎯 [알림] 나스닥 MDD 1차 타겟 진입! 대기 중인 현금 예수금 분사를 준비하세요.";
             } else if (qqqMdd < -20) {
                 mddEl.style.color = "var(--danger)";
-                mddStatusText = " ⚠️ [경고] 나스닥 낙폭이 -20%를 초과했습니다. 계좌 내부 수혈을 검토하세요.";
+                mddStatusText = " ⚠️ [경고] 나스닥 낙폭 -20% 초과! 예수금을 활용한 강도 높은 추가 수혈 구간입니다.";
             } else {
                 mddEl.style.color = "var(--text-main)";
             }
         }
 
         const signalEl = document.getElementById('statusSignal');
-        if (leverage >= 1.85) {
-            signalEl.innerText = "🚨 [과열] 레버리지 엔진 비중 과다! 상승한 QLD/TQQQ를 일부 매도하여 방패(QQQM)를 채우세요." + mddStatusText;
+        if (stockLeverage >= 1.85) {
+            signalEl.innerText = "🚨 [과열] 주식 엔진 배수 과다! 상승한 QLD/TQQQ를 일부 매도하여 방패(QQQM)를 채우세요." + mddStatusText;
             signalEl.className = "dash-card alert-zone status-rebalance";
             signalEl.style.color = "#ef4444";
-        } else if (leverage <= 1.75) {
-            signalEl.innerText = "📉 [조정/폭락] 방패 비중 과다! 상대적으로 안전했던 QQQM을 매도하여 저렴해진 QLD/TQQQ를 수혈하세요." + mddStatusText;
+        } else if (stockLeverage <= 1.75) {
+            signalEl.innerText = "📉 [조정/폭락] 주식 엔진 방패 과다! SPYM/QQQM을 매도하여 저렴해진 QLD/TQQQ 엔진을 수혈하세요." + mddStatusText;
             signalEl.className = "dash-card alert-zone status-rebalance";
             signalEl.style.color = "#f59e0b";
         } else {
-            signalEl.innerText = mddStatusText ? mddStatusText : "✅ 정상 범위 (HOLD): 1.8배 공수 밸런스 축이 안정적으로 유지 중입니다.";
+            signalEl.innerText = mddStatusText ? mddStatusText : "✅ 정상 범위 (HOLD): 주식 타격대(4:4:2)와 현금 예비군이 완벽한 공수 밸런스를 유지 중입니다.";
             signalEl.className = mddStatusText ? "dash-card alert-zone status-rebalance" : "dash-card alert-zone status-hold";
             signalEl.style.color = mddStatusText ? "#92400e" : "#065f46";
         }
