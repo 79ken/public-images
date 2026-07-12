@@ -240,15 +240,15 @@
             </thead>
             <tbody>
             <tr>
-                <td>SPYM (1배 방패)</td>
-                <td id="priceSPYM" class="loading-text">Loading..</td>
-                <td><input type="number" id="qtySpym" class="input-qty" value="0" min="0" oninput="updateData()"></td>
-                <td id="curSpym">$0</td>
-                <td id="targetSpym">-</td>
-                <td id="wonSpym">₩0</td>
-                <td id="weightSpym">-</td>
-                <td id="adjSpym">-</td>
-                <td id="guideSpym" class="guide-text">-</td>
+                <td>QQQM (1배 방패)</td>
+                <td id="priceQQQM" class="loading-text">Loading..</td>
+                <td><input type="number" id="qtyQqqm" class="input-qty" value="0" min="0" oninput="updateData()"></td>
+                <td id="curQqqm">$0</td>
+                <td id="targetQqqm">-</td>
+                <td id="wonQqqm">₩0</td>
+                <td id="weightQqqm">-</td>
+                <td id="adjQqqm">-</td>
+                <td id="guideQqqm" class="guide-text">-</td>
             </tr>
             <tr>
                 <td>QLD (2배 엔진)</td>
@@ -289,9 +289,8 @@
 </div>
 
 <script>
-    let prices = { SPYM: 0, QLD: 0, TQQQ: 0, QQQ: 0, QQQ_high: 0, exchangeRate: 0 };
+    let prices = { QQQM: 0, QLD: 0, TQQQ: 0, QQQ: 0, QQQ_high: 0, exchangeRate: 0 };
 
-    // 프로덕션(GitHub) 및 로컬 하이브리드 대응용 프록시 클러스터
     const proxyPool = [
         {
             name: 'Corsproxy.io',
@@ -313,11 +312,10 @@
         }
     ];
 
-    // 1. 시세 파이프라인 (환율 100% 분리 직접 통신 구조)
+    // 1. 시세 및 독립형 환율 연동 파이프라인
     async function fetchPrices() {
         document.getElementById('updateTime').innerText = "🔄 실시간 시세 갱신 중...";
 
-        // 프록시 없는 완전 독립식 환율 API (CORS 프리)
         try {
             const fxResponse = await fetch('https://open.er-api.com/v6/latest/USD');
             if (fxResponse.ok) {
@@ -326,16 +324,15 @@
                 document.getElementById('exchangeRateDisplay').innerText = `₩${prices.exchangeRate.toFixed(2)}`;
             }
         } catch (e) {
-            console.error("환율 API 단절 대비 안전 스태틱 값 적용");
+            console.error("환율 API 단절 대비 기본 안전값 세팅");
             prices.exchangeRate = 1400;
         }
 
-        const tickers = ['SPYM', 'QLD', 'TQQQ', 'QQQ'];
+        const tickers = ['QQQM', 'QLD', 'TQQQ', 'QQQ'];
         let hasError = false;
 
         for (let ticker of tickers) {
             let data = null;
-            // 방화벽 감시가 가장 느슨한 query2 차트 엔드포인트 채택
             const targetUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?_=${Date.now()}`;
 
             for (let proxy of proxyPool) {
@@ -346,7 +343,7 @@
                         break;
                     }
                 } catch (e) {
-                    console.warn(`${ticker} 트래픽 우회 중 ${proxy.name} 차단됨. Failover 가동`);
+                    console.warn(`${ticker} 데이터 수집 중 ${proxy.name} 노드 우회. Failover 구동`);
                 }
             }
 
@@ -381,42 +378,42 @@
         updateData();
     }
 
-    // 2. 초기 기기 데이터 파싱 라우터
+    // 2. 데이터 기기간 파라미터 파싱 및 로컬 라우터
     function loadInitialData() {
         const urlParams = new URLSearchParams(window.location.search);
-        const pSpym = urlParams.get('spym');
+        const pQqqm = urlParams.get('qqqm');
         const pQld = urlParams.get('qld');
         const pTqqq = urlParams.get('tqqq');
 
-        if (pSpym !== null || pQld !== null || pTqqq !== null) {
-            if (pSpym !== null) document.getElementById('qtySpym').value = pSpym;
+        if (pQqqm !== null || pQld !== null || pTqqq !== null) {
+            if (pQqqm !== null) document.getElementById('qtyQqqm').value = pQqqm;
             if (pQld !== null) document.getElementById('qtyQld').value = pQld;
             if (pTqqq !== null) document.getElementById('qtyTqqq').value = pTqqq;
-            saveCurrentData(pSpym || 0, pQld || 0, pTqqq || 0);
+            saveCurrentData(pQqqm || 0, pQld || 0, pTqqq || 0);
         } else {
-            const savedSpymQty = localStorage.getItem('leverage_qty_spym');
+            const savedQqqmQty = localStorage.getItem('leverage_qty_qqqm');
             const savedQldQty = localStorage.getItem('leverage_qty_qld');
             const savedTqqqQty = localStorage.getItem('leverage_qty_tqqq');
 
-            if (savedSpymQty !== null) document.getElementById('qtySpym').value = savedSpymQty;
+            if (savedQqqmQty !== null) document.getElementById('qtyQqqm').value = savedQqqmQty;
             if (savedQldQty !== null) document.getElementById('qtyQld').value = savedQldQty;
             if (savedTqqqQty !== null) document.getElementById('qtyTqqq').value = savedTqqqQty;
         }
     }
 
-    function saveCurrentData(spymQty, qldQty, tqqqQty) {
-        localStorage.setItem('leverage_qty_spym', spymQty);
+    function saveCurrentData(qqqmQty, qldQty, tqqqQty) {
+        localStorage.setItem('leverage_qty_qqqm', qqqmQty);
         localStorage.setItem('leverage_qty_qld', qldQty);
         localStorage.setItem('leverage_qty_tqqq', tqqqQty);
     }
 
     function copySyncUrl() {
-        const qtySpym = document.getElementById('qtySpym').value || 0;
+        const qtyQqqm = document.getElementById('qtyQqqm').value || 0;
         const qtyQld = document.getElementById('qtyQld').value || 0;
         const qtyTqqq = document.getElementById('qtyTqqq').value || 0;
 
         const baseUrl = window.location.origin + window.location.pathname;
-        const syncUrl = `${baseUrl}?spym=${qtySpym}&qld=${qtyQld}&tqqq=${qtyTqqq}`;
+        const syncUrl = `${baseUrl}?qqqm=${qtyQqqm}&qld=${qtyQld}&tqqq=${qtyTqqq}`;
 
         navigator.clipboard.writeText(syncUrl).then(() => {
             alert("🔗 동기화 주소가 복사되었습니다!\n\n다른 PC나 스마트폰 브라우저에 이 주소로 접속 후 '북마크'를 해두시면 수량이 연동됩니다.");
@@ -425,23 +422,23 @@
         });
     }
 
-    // 3. 자산 연산 Core 알고리즘 (목표 비중 컬럼 제거 및 요청 레이아웃 동적 바인딩)
+    // 3. 자산 종합 연산 코어 스크립트 (Pure 나스닥 1.8배 매핑)
     function updateData() {
-        const qtySpym = parseFloat(document.getElementById('qtySpym').value) || 0;
+        const qtyQqqm = parseFloat(document.getElementById('qtyQqqm').value) || 0;
         const qtyQld = parseFloat(document.getElementById('qtyQld').value) || 0;
         const qtyTqqq = parseFloat(document.getElementById('qtyTqqq').value) || 0;
 
-        saveCurrentData(qtySpym, qtyQld, qtyTqqq);
+        saveCurrentData(qtyQqqm, qtyQld, qtyTqqq);
 
-        if (prices.SPYM === 0 || prices.QLD === 0 || prices.TQQQ === 0) return;
+        if (prices.QQQM === 0 || prices.QLD === 0 || prices.TQQQ === 0) return;
 
         // 1) 평가 금액 ($)
-        const spymVal = qtySpym * prices.SPYM;
+        const qqqmVal = qtyQqqm * prices.QQQM;
         const qldVal = qtyQld * prices.QLD;
         const tqqqVal = qtyTqqq * prices.TQQQ;
-        const total = spymVal + qldVal + tqqqVal;
+        const total = qqqmVal + qldVal + tqqqVal;
 
-        document.getElementById('curSpym').innerText = '$' + Math.round(spymVal).toLocaleString();
+        document.getElementById('curQqqm').innerText = '$' + Math.round(qqqmVal).toLocaleString();
         document.getElementById('curQld').innerText = '$' + Math.round(qldVal).toLocaleString();
         document.getElementById('curTqqq').innerText = '$' + Math.round(tqqqVal).toLocaleString();
         document.getElementById('totalAmt').innerText = '$' + Math.round(total).toLocaleString();
@@ -452,59 +449,59 @@
             return;
         }
 
-        // 2) 목표 금액 ($)
-        const targetSpym = total * 0.40;
+        // 2) 목표 금액 ($) - 40 : 40 : 20
+        const targetQqqm = total * 0.40;
         const targetQld = total * 0.40;
         const targetTqqq = total * 0.20;
-        document.getElementById('targetSpym').innerText = '$' + Math.round(targetSpym).toLocaleString();
+        document.getElementById('targetQqqm').innerText = '$' + Math.round(targetQqqm).toLocaleString();
         document.getElementById('targetQld').innerText = '$' + Math.round(targetQld).toLocaleString();
         document.getElementById('targetTqqq').innerText = '$' + Math.round(targetTqqq).toLocaleString();
         document.getElementById('targetTotal').innerText = '$' + Math.round(total).toLocaleString();
 
         // 3) 원화 금액 환산
         const currentRate = prices.exchangeRate > 0 ? prices.exchangeRate : 1400;
-        const wonSpym = spymVal * currentRate;
+        const wonQqqm = qqqmVal * currentRate;
         const wonQld = qldVal * currentRate;
         const wonTqqq = tqqqVal * currentRate;
         const totalWon = total * currentRate;
-        document.getElementById('wonSpym').innerText = '₩' + Math.round(wonSpym).toLocaleString();
+        document.getElementById('wonQqqm').innerText = '₩' + Math.round(wonQqqm).toLocaleString();
         document.getElementById('wonQld').innerText = '₩' + Math.round(wonQld).toLocaleString();
         document.getElementById('wonTqqq').innerText = '₩' + Math.round(wonTqqq).toLocaleString();
         document.getElementById('totalWon').innerText = '₩' + Math.round(totalWon).toLocaleString();
 
         // 4) 현재 비중
-        const wSpym = spymVal / total;
+        const wQqqm = qqqmVal / total;
         const wQld = qldVal / total;
         const wTqqq = tqqqVal / total;
-        document.getElementById('weightSpym').innerText = (wSpym * 100).toFixed(1) + '%';
+        document.getElementById('weightQqqm').innerText = (wQqqm * 100).toFixed(1) + '%';
         document.getElementById('weightQld').innerText = (wQld * 100).toFixed(1) + '%';
         document.getElementById('weightTqqq').innerText = (wTqqq * 100).toFixed(1) + '%';
 
         // 5) 조정 필요 ($)
-        const adjSpym = targetSpym - spymVal;
+        const adjQqqm = targetQqqm - qqqmVal;
         const adjQld = targetQld - qldVal;
         const adjTqqq = targetTqqq - tqqqVal;
-        document.getElementById('adjSpym').innerText = '$' + Math.round(adjSpym).toLocaleString();
+        document.getElementById('adjQqqm').innerText = '$' + Math.round(adjQqqm).toLocaleString();
         document.getElementById('adjQld').innerText = '$' + Math.round(adjQld).toLocaleString();
         document.getElementById('adjTqqq').innerText = '$' + Math.round(adjTqqq).toLocaleString();
 
         // 6) 주문 가이드
-        renderGuide('guideSpym', adjSpym);
+        renderGuide('guideQqqm', adjQqqm);
         renderGuide('guideQld', adjQld);
         renderGuide('guideTqqq', adjTqqq);
 
         // 실시간 복합 배수 계산
-        const leverage = (wSpym * 1) + (wQld * 2) + (wTqqq * 3);
+        const leverage = (wQqqm * 1) + (wQld * 2) + (wTqqq * 3);
         document.getElementById('currentLeverage').innerText = leverage.toFixed(2);
 
-        // QQQ MDD 매핑
+        // QQQ MDD 트래킹
         let qqqMdd = 0;
         let mddStatusText = "";
         if (prices.QQQ > 0 && prices.QQQ_high > 0) {
             qqqMdd = ((prices.QQQ - prices.QQQ_high) / prices.QQQ_high) * 100;
             const mddEl = document.getElementById('nasdaqMdd');
             mddEl.innerText = qqqMdd.toFixed(2) + '%';
-            document.getElementById('nasdaqPeak').innerText = `(최고가: $${prices.QQQ_high.toFixed(2)} / 현재: $${prices.QQQ.toFixed(2)})`;
+            document.getElementById('nasdaqPeak').innerText = `(52주 최고가: $${prices.QQQ_high.toFixed(2)} / 현재: $${prices.QQQ.toFixed(2)})`;
 
             if (qqqMdd <= -15 && qqqMdd >= -20) {
                 mddEl.style.color = "var(--warning)";
@@ -519,11 +516,11 @@
 
         const signalEl = document.getElementById('statusSignal');
         if (leverage >= 1.85) {
-            signalEl.innerText = "🚨 [과열] 레버리지 엔진 비중 과다! 상승한 QLD/TQQQ를 일부 매도하여 방패(SPYM)를 채우세요." + mddStatusText;
+            signalEl.innerText = "🚨 [과열] 레버리지 엔진 비중 과다! 상승한 QLD/TQQQ를 일부 매도하여 방패(QQQM)를 채우세요." + mddStatusText;
             signalEl.className = "dash-card alert-zone status-rebalance";
             signalEl.style.color = "#ef4444";
         } else if (leverage <= 1.75) {
-            signalEl.innerText = "📉 [조정/폭락] 방패 비중 과다! 상대적으로 안전했던 SPYM을 매도하여 저렴해진 QLD/TQQQ를 수혈하세요." + mddStatusText;
+            signalEl.innerText = "📉 [조정/폭락] 방패 비중 과다! 상대적으로 안전했던 QQQM을 매도하여 저렴해진 QLD/TQQQ를 수혈하세요." + mddStatusText;
             signalEl.className = "dash-card alert-zone status-rebalance";
             signalEl.style.color = "#f59e0b";
         } else {
