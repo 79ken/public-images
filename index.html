@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>나스닥 1.8배 밸런스 자산 관리기 Pro (3:5:2 개편본)</title>
+    <title>나스닥 1.8배 밸런스 자산 관리기 Pro (3:5:2 반응형)</title>
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -34,6 +34,7 @@
             padding: 30px;
             border-radius: 16px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            box-sizing: border-box;
         }
 
         h1 {
@@ -81,6 +82,7 @@
             cursor: pointer;
             font-size: 13px;
             white-space: nowrap;
+            text-align: center;
         }
 
         .btn-refresh { background-color: var(--primary); }
@@ -94,18 +96,6 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 15px;
             margin-bottom: 30px;
-        }
-
-        @media (max-width: 992px) {
-            .dashboard {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 576px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
         }
 
         .dash-card {
@@ -139,15 +129,30 @@
             color: var(--primary);
         }
 
+        /* 📱 모바일 스크롤 컨테이너 강화 */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 25px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #ffffff;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
             font-size: 14px;
+            min-width: 980px; /* 모바일 뷰포트 압착으로 인한 텍스트 왜곡 원천 차단 */
+        }
+
+        .target-table {
+            min-width: 850px;
         }
 
         th, td {
-            padding: 14px 6px;
+            padding: 14px 10px;
             text-align: right;
             border-bottom: 1px solid var(--border);
             white-space: nowrap;
@@ -156,6 +161,18 @@
         th:first-child, td:first-child {
             text-align: left;
             font-weight: 600;
+            position: sticky;
+            left: 0;
+            background: inherit;
+            z-index: 1;
+        }
+        
+        td:first-child {
+            background: #fafafa;
+        }
+        
+        tr:hover td:first-child {
+            background: #f1f5f9;
         }
 
         th {
@@ -203,7 +220,7 @@
             color: var(--primary);
             font-weight: bold;
         }
-
+        
         .target-config-box {
             display: flex;
             gap: 20px;
@@ -213,6 +230,63 @@
             padding: 15px;
             border-radius: 8px;
             border: 1px solid var(--border);
+        }
+
+        /* 📱 미디어 쿼리 블록 고도화 */
+        @media (max-width: 992px) {
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 576px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+                border-radius: 12px;
+            }
+            h1 {
+                font-size: 20px;
+            }
+            .subtitle {
+                font-size: 12px;
+                margin-bottom: 15px;
+            }
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 10px;
+                gap: 8px;
+            }
+            .price-status {
+                text-align: center;
+            }
+            .action-btns {
+                flex-direction: column;
+                gap: 6px;
+            }
+            .btn-refresh, .btn-sync {
+                width: 100%;
+                padding: 10px;
+            }
+            .dashboard {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .target-config-box {
+                flex-direction: column;
+                gap: 12px;
+                padding: 10px;
+            }
+            .target-config-box div {
+                width: 100%;
+            }
+            .input-qty-large {
+                width: calc(100% - 30px);
+                box-sizing: border-box;
+            }
         }
     </style>
 </head>
@@ -254,8 +328,8 @@
     </div>
 
     <!-- 1. 실시간 보유 자산 현황 테이블 -->
+    <h2 style="font-size: 15px; margin-bottom: 10px; color: var(--text-main); font-weight: 700;">📈 실시간 자산 현황 매트릭스 <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(모바일은 좌우 스와이프 가능)</span></h2>
     <div class="table-responsive">
-        <h2 style="font-size: 16px; margin-bottom: 10px; color: var(--text-main);">📈 실시간 자산 현황 매트릭스</h2>
         <table>
             <thead>
             <tr>
@@ -330,11 +404,11 @@
         </table>
     </div>
 
-    <!-- 2. [신규 추가] 3:5:2 최종 목표 및 추가 매수 계산기 모듈 -->
-    <div class="dash-card" style="grid-column: 1 / -1; text-align: left; background: #fff; border: 1px dashed var(--primary); padding: 25px; margin-top: 25px; border-radius: 12px;">
-        <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 16px; color: var(--text-main);">🎯 3:5:2 최종 목표 및 추가 매수 계산기 (연말 플랜 관리)</h3>
+    <!-- 2. 3:5:2 최종 목표 및 추가 매수 계산기 모듈 -->
+    <div class="dash-card" style="grid-column: 1 / -1; text-align: left; background: #fff; border: 1px dashed var(--primary); padding: 20px; margin-top: 15px; border-radius: 12px;">
+        <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 15px; color: var(--text-main); font-weight: 700;">🎯 3:5:2 최종 목표 및 추가 매수 계산기 (연말 플랜 관리)</h3>
         <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px; margin-top: 0;">목표 총자산에서 현금 버퍼를 제외한 금액을 자동으로 3:5:2 비율로 쪼개어 가이드를 연산합니다.</p>
-
+        
         <div class="target-config-box">
             <div>
                 <label style="font-size: 12px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 5px;">최종 목표 총자산 (₩)</label>
@@ -345,9 +419,9 @@
                 <input type="number" id="targetCashBufferWon" class="input-qty-large" value="120000000" step="10000000" oninput="updateData()"> 원
             </div>
         </div>
-
+        
         <div class="table-responsive">
-            <table style="margin-bottom: 0; background: #ffffff;">
+            <table class="target-table" style="margin-bottom: 0; background: #ffffff;">
                 <thead>
                 <tr style="background: #f8fafc;">
                     <th style="text-align: left;">자산명</th>
@@ -423,7 +497,7 @@
 
     async function fetchPrices() {
         document.getElementById('updateTime').innerText = "🔄 실시간 시세 갱신 중...";
-
+        
         try {
             const fxResponse = await fetch('https://open.er-api.com/v6/latest/USD');
             if (fxResponse.ok) {
@@ -433,7 +507,7 @@
             }
         } catch (e) {
             console.error("환율 API 단절 대비 기본 안전값 세팅");
-            prices.exchangeRate = 1400;
+            prices.exchangeRate = 1400; 
         }
 
         const tickers = ['SPYM', 'QLD', 'TQQQ', 'QQQ'];
@@ -479,8 +553,8 @@
         }
 
         const now = new Date();
-        document.getElementById('updateTime').innerText = hasError
-            ? "⚠️ 일부 시세 지연 (GitHub Pages 업로드 후 확인 권장)"
+        document.getElementById('updateTime').innerText = hasError 
+            ? "⚠️ 일부 시세 지연 (GitHub Pages 업로드 후 확인 권장)" 
             : `🕒 동기화 완료 (${now.toLocaleTimeString()})`;
 
         updateData();
@@ -541,7 +615,7 @@
         const syncUrl = `${baseUrl}?spym=${qtySpym}&qld=${qtyQld}&tqqq=${qtyTqqq}&cash=${cashWon}&tgOver=${targetOverallWon}&tgCash=${targetCashBufferWon}`;
 
         navigator.clipboard.writeText(syncUrl).then(() => {
-            alert("🔗 동기화 주소가 복사되었습니다!\n\n예수금 및 최종 마이그레이션 목표 설정까지 결합된 동기화 링크입니다.");
+            alert("🔗 동기화 주소가 복사되었습니다!\n\n예수금 및 모바일 최적화 레이아웃 정보가 포함된 안전한 마이그레이션 링크입니다.");
         }).catch(err => {
             alert("링크 복사 실패: " + syncUrl);
         });
@@ -552,7 +626,7 @@
         const qtyQld = parseFloat(document.getElementById('qtyQld').value) || 0;
         const qtyTqqq = parseFloat(document.getElementById('qtyTqqq').value) || 0;
         const cashWon = parseFloat(document.getElementById('cashWon').value) || 0;
-
+        
         const targetOverallWon = parseFloat(document.getElementById('targetOverallWon').value) || 0;
         const targetCashBufferWon = parseFloat(document.getElementById('targetCashBufferWon').value) || 0;
 
@@ -565,10 +639,10 @@
         const spymVal = qtySpym * prices.SPYM;
         const qldVal = qtyQld * prices.QLD;
         const tqqqVal = qtyTqqq * prices.TQQQ;
-        const cashValUSD = cashWon / currentRate;
+        const cashValUSD = cashWon / currentRate; 
 
-        const stockTotal = spymVal + qldVal + tqqqVal;
-        const overallTotalUSD = stockTotal + cashValUSD;
+        const stockTotal = spymVal + qldVal + tqqqVal; 
+        const overallTotalUSD = stockTotal + cashValUSD; 
 
         document.getElementById('curSpym').innerText = '$' + Math.round(spymVal).toLocaleString();
         document.getElementById('curQld').innerText = '$' + Math.round(qldVal).toLocaleString();
@@ -630,7 +704,7 @@
         const effectiveLeverage = ((spymVal * 1) + (qldVal * 2) + (tqqqVal * 3)) / overallTotalUSD;
         document.getElementById('effectiveLeverage').innerText = effectiveLeverage.toFixed(2);
 
-        // 🚨 [동적 계산 코어] 최종 목표 플랜 역산 알고리즘 바인딩
+        // 🚨 최종 목표 동적 매핑 역산 모듈
         const targetStockWonTotal = targetOverallWon - targetCashBufferWon;
         const targetStockUsdTotal = targetStockWonTotal / currentRate;
 
