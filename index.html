@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>나스닥 1.8배 밸런스 자산 관리기 Pro (3:5:2 반응형)</title>
+    <title>섀논-켈리 마스터 대시보드 (동적 국면 전환)</title>
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -17,309 +17,110 @@
             --border: #e2e8f0;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 1150px; background: var(--card-bg); padding: 30px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); box-sizing: border-box; }
+        h1 { font-size: 24px; margin-top: 0; margin-bottom: 8px; text-align: center; }
+        .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 25px; font-size: 14px; }
 
-        .container {
-            width: 100%;
-            max-width: 1150px;
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            box-sizing: border-box;
-        }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 12px 20px; background: #f1f5f9; border-radius: 8px; gap: 10px; flex-wrap: wrap; }
+        .price-status { font-size: 13px; color: var(--text-muted); flex-grow: 1; }
+        .action-btns { display: flex; gap: 8px; align-items: center; }
 
-        h1 {
-            font-size: 24px;
-            margin-top: 0;
-            margin-bottom: 8px;
-            text-align: center;
-        }
+        .regime-selector { padding: 8px 12px; border-radius: 6px; border: 2px solid var(--primary); font-weight: 700; font-size: 13px; background-color: #eff6ff; color: #1e3a8a; cursor: pointer; outline: none; }
+        .regime-selector:focus { border-color: #2563eb; }
 
-        .subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            margin-bottom: 25px;
-            font-size: 14px;
-        }
-
-        .header-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding: 12px 20px;
-            background: #f1f5f9;
-            border-radius: 8px;
-            gap: 10px;
-        }
-
-        .price-status {
-            font-size: 13px;
-            color: var(--text-muted);
-            flex-grow: 1;
-        }
-
-        .action-btns {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-refresh, .btn-sync {
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 13px;
-            white-space: nowrap;
-            text-align: center;
-        }
-
+        .btn-refresh, .btn-sync { color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; white-space: nowrap; text-align: center; }
         .btn-refresh { background-color: var(--primary); }
         .btn-refresh:hover { background-color: #2563eb; }
-
         .btn-sync { background-color: #475569; }
         .btn-sync:hover { background-color: #334155; }
 
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
+        .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+        .dash-card { border: 1px solid var(--border); border-radius: 12px; padding: 18px 10px; text-align: center; background: #fafafa; transition: all 0.3s ease; }
+        .dash-card.alert-zone { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; line-height: 1.5; padding: 15px; }
+        .dash-label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-weight: 600; }
+        .dash-value { font-size: 24px; font-weight: 700; color: var(--primary); }
 
-        .dash-card {
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 18px 10px;
-            text-align: center;
-            background: #fafafa;
-        }
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 25px; border: 1px solid var(--border); border-radius: 8px; background: #ffffff; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 980px; }
+        .target-table { min-width: 850px; }
+        th, td { padding: 14px 10px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        th:first-child, td:first-child { text-align: left; font-weight: 600; position: sticky; left: 0; background: inherit; z-index: 1; }
+        td:first-child { background: #fafafa; }
+        tr:hover td:first-child { background: #f1f5f9; }
+        th { background-color: #f1f5f9; color: var(--text-muted); }
 
-        .dash-card.alert-zone {
-            grid-column: 1 / -1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 15px;
-            line-height: 1.5;
-            padding: 15px;
-        }
-
-        .dash-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 5px;
-        }
-
-        .dash-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        /* 📱 모바일 스크롤 컨테이너 강화 */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin-bottom: 25px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: #ffffff;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-            min-width: 980px; /* 모바일 뷰포트 압착으로 인한 텍스트 왜곡 원천 차단 */
-        }
-
-        .target-table {
-            min-width: 850px;
-        }
-
-        th, td {
-            padding: 14px 10px;
-            text-align: right;
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap;
-        }
-
-        th:first-child, td:first-child {
-            text-align: left;
-            font-weight: 600;
-            position: sticky;
-            left: 0;
-            background: inherit;
-            z-index: 1;
-        }
-        
-        td:first-child {
-            background: #fafafa;
-        }
-        
-        tr:hover td:first-child {
-            background: #f1f5f9;
-        }
-
-        th {
-            background-color: #f1f5f9;
-            color: var(--text-muted);
-        }
-
-        .input-qty {
-            width: 85px;
-            padding: 6px 8px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            text-align: right;
-            font-size: 14px;
-        }
-
-        .input-qty-large {
-            width: 135px;
-            padding: 6px 8px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            text-align: right;
-            font-size: 14px;
-        }
-
-        .input-qty:focus, .input-qty-large:focus {
-            border-color: var(--primary);
-            outline: none;
-        }
-
-        .total-row {
-            background-color: #f8fafc;
-            font-weight: 700;
-        }
+        .input-qty { width: 85px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; text-align: right; font-size: 14px; }
+        .input-qty-large { width: 135px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; text-align: right; font-size: 14px; }
+        .input-qty:focus, .input-qty-large:focus { border-color: var(--primary); outline: none; }
+        .total-row { background-color: #f8fafc; font-weight: 700; }
 
         .guide-text { font-weight: 600; }
         .text-buy { color: var(--success); }
         .text-sell { color: var(--danger); }
         .text-hold { color: var(--text-muted); }
-
         .status-hold { background-color: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
         .status-rebalance { background-color: #fffbec; color: #92400e; border-color: #fde68a; }
+        .status-danger { background-color: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+        .loading-text { color: var(--primary); font-weight: bold; }
 
-        .loading-text {
-            color: var(--primary);
-            font-weight: bold;
-        }
-        
-        .target-config-box {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-            background: #ffffff;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
+        .target-config-box { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px; background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
 
-        /* 📱 미디어 쿼리 블록 고도화 */
-        @media (max-width: 992px) {
-            .dashboard {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
+        @media (max-width: 992px) { .dashboard { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 576px) {
-            body {
-                padding: 10px;
-            }
-            .container {
-                padding: 15px;
-                border-radius: 12px;
-            }
-            h1 {
-                font-size: 20px;
-            }
-            .subtitle {
-                font-size: 12px;
-                margin-bottom: 15px;
-            }
-            .header-actions {
-                flex-direction: column;
-                align-items: stretch;
-                padding: 10px;
-                gap: 8px;
-            }
-            .price-status {
-                text-align: center;
-            }
-            .action-btns {
-                flex-direction: column;
-                gap: 6px;
-            }
-            .btn-refresh, .btn-sync {
-                width: 100%;
-                padding: 10px;
-            }
-            .dashboard {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-            .target-config-box {
-                flex-direction: column;
-                gap: 12px;
-                padding: 10px;
-            }
-            .target-config-box div {
-                width: 100%;
-            }
-            .input-qty-large {
-                width: calc(100% - 30px);
-                box-sizing: border-box;
-            }
+            body { padding: 10px; }
+            .container { padding: 15px; border-radius: 12px; }
+            h1 { font-size: 20px; }
+            .subtitle { font-size: 12px; margin-bottom: 15px; }
+            .header-actions { flex-direction: column; align-items: stretch; padding: 10px; gap: 8px; }
+            .price-status { text-align: center; }
+            .action-btns { flex-direction: column; gap: 6px; width: 100%; }
+            .regime-selector { width: 100%; text-align: center; }
+            .btn-refresh, .btn-sync { width: 100%; padding: 10px; }
+            .dashboard { grid-template-columns: 1fr; gap: 10px; }
+            .target-config-box { flex-direction: column; gap: 12px; padding: 10px; }
+            .target-config-box div { width: 100%; }
+            .input-qty-large { width: calc(100% - 30px); box-sizing: border-box; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>나스닥 1.8배 밸런스 자산 관리기 Pro</h1>
-    <div class="subtitle">실시간 시세 연동 및 통합 자산 마스터 관리 시스템 (주식 엔진 비율 SPYM 30 : QLD 50 : TQQQ 20)</div>
+    <h1>섀논-켈리 마스터 대시보드 (동적 국면 전환)</h1>
+    <div class="subtitle">선택한 시장 국면에 따라 마스터 현금/주식 비율이 동적으로 재조정됩니다 (±5% 리밸런싱)</div>
 
     <div class="header-actions">
         <div class="price-status" id="updateTime">시세 로드 중...</div>
         <div class="action-btns">
-            <button class="btn-sync" onclick="copySyncUrl()">🔗 기기 간 동기화 링크 복사</button>
-            <button class="btn-refresh" onclick="fetchPrices()">🔄 시세 동기화</button>
+            <!-- 🚨 국면(Regime) 선택 드롭다운: 위기장 50% 추가 -->
+            <select id="regimeSelect" class="regime-selector" onchange="updateData()">
+                <option value="bull">🔥 강세장 (현금 20% / 주식 80%)</option>
+                <option value="neutral" selected>⚖️ 평년장 (현금 30% / 주식 70%)</option>
+                <option value="bear">❄️ 하락장 (현금 40% / 주식 60%)</option>
+                <option value="crisis">🚨 위기장 (현금 50% / 주식 50%)</option>
+            </select>
+            <button class="btn-sync" onclick="copySyncUrl()">🔗 설정 복사</button>
+            <button class="btn-refresh" onclick="fetchPrices()">🔄 시세 갱신</button>
         </div>
     </div>
 
     <div class="dashboard">
         <div class="dash-card">
-            <div class="dash-label">주식 엔진 배수 (타겟 1.90)</div>
-            <div class="dash-value" id="currentLeverage">-.--</div>
+            <div class="dash-label" id="labelCashTarget">현재 현금 버퍼 비중</div>
+            <div class="dash-value" id="currentCashWeight">-.--%</div>
         </div>
         <div class="dash-card">
-            <div class="dash-label">전체 실질 배수 (현금 버퍼 포함)</div>
-            <div class="dash-value" id="effectiveLeverage" style="color: #0f172a;">-.--</div>
+            <div class="dash-label" id="labelStockTarget">현재 주식 총 비중</div>
+            <div class="dash-value" id="currentStockWeight" style="color: #0f172a;">-.--%</div>
         </div>
         <div class="dash-card">
             <div class="dash-label">나스닥(QQQ) 실시간 MDD</div>
-            <div class="dash-value" id="nasdaqMdd" style="color: var(--text-main); font-size: 24px;">-.--%</div>
-            <div class="dash-label" id="nasdaqPeak" style="font-size: 10px; margin-top: 3px; color: var(--text-muted);">(최고가 로드 중...)</div>
+            <div class="dash-value" id="nasdaqMdd" style="color: var(--text-main);">-.--%</div>
+            <div class="dash-label" id="nasdaqPeak" style="font-size: 10px; margin-top: 3px; color: var(--text-muted);">(52주 최고가 로드 중)</div>
         </div>
         <div class="dash-card">
-            <div class="dash-label">실시간 적용 환율</div>
+            <div class="dash-label">실시간 환율</div>
             <div class="dash-value" id="exchangeRateDisplay" style="color: #475569;">₩-,--.-</div>
         </div>
         <div class="dash-card alert-zone status-hold" id="statusSignal">
@@ -327,99 +128,91 @@
         </div>
     </div>
 
-    <!-- 1. 실시간 보유 자산 현황 테이블 -->
-    <h2 style="font-size: 15px; margin-bottom: 10px; color: var(--text-main); font-weight: 700;">📈 실시간 자산 현황 매트릭스 <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">(모바일은 좌우 스와이프 가능)</span></h2>
+    <h2 style="font-size: 15px; margin-bottom: 10px; color: var(--text-main); font-weight: 700;">📈 실시간 자산 현황 & 액션 티켓</h2>
     <div class="table-responsive">
         <table>
             <thead>
             <tr>
                 <th>자산명</th>
                 <th>현재가 ($)</th>
-                <th>보유 수량 / 원화 입력</th>
+                <th>보유 수량 / 원화</th>
                 <th>평가 금액 ($)</th>
-                <th>목표 금액 ($)</th>
-                <th>원화 금액</th>
-                <th>전체 비중</th>
-                <th>조정 필요 ($)</th>
-                <th>주문 가이드</th>
+                <th>목표 비율</th>
+                <th>현재 비중</th>
+                <th>±5% 이탈 여부</th>
+                <th>기계적 오더 티켓 ($)</th>
             </tr>
             </thead>
             <tbody>
             <tr>
-                <td>SPYM (1배 방패)</td>
+                <td id="labelSpym">SPYM (방어)</td>
                 <td id="priceSPYM" class="loading-text">Loading..</td>
                 <td><input type="number" id="qtySpym" class="input-qty" value="0" min="0" oninput="updateData()"></td>
                 <td id="curSpym">$0</td>
-                <td id="targetSpym">-</td>
-                <td id="wonSpym">₩0</td>
-                <td id="weightSpym">-</td>
-                <td id="adjSpym">-</td>
+                <td id="targetColSpym" style="color: var(--text-muted);">-</td>
+                <td id="weightSpym" style="font-weight: 600;">-</td>
+                <td id="alertSpym">-</td>
                 <td id="guideSpym" class="guide-text">-</td>
             </tr>
             <tr>
-                <td>QLD (2배 엔진)</td>
+                <td id="labelQld">QLD (엔진)</td>
                 <td id="priceQLD" class="loading-text">Loading..</td>
                 <td><input type="number" id="qtyQld" class="input-qty" value="0" min="0" oninput="updateData()"></td>
                 <td id="curQld">$0</td>
-                <td id="targetQld">-</td>
-                <td id="wonQld">₩0</td>
-                <td id="weightQld">-</td>
-                <td id="adjQld">-</td>
+                <td id="targetColQld" style="color: var(--text-muted);">-</td>
+                <td id="weightQld" style="font-weight: 600;">-</td>
+                <td id="alertQld">-</td>
                 <td id="guideQld" class="guide-text">-</td>
             </tr>
             <tr>
-                <td>TQQQ (3배 엔진)</td>
+                <td id="labelTqqq">TQQQ (폭발)</td>
                 <td id="priceTQQQ" class="loading-text">Loading..</td>
                 <td><input type="number" id="qtyTqqq" class="input-qty" value="0" min="0" oninput="updateData()"></td>
                 <td id="curTqqq">$0</td>
-                <td id="targetTqqq">-</td>
-                <td id="wonTqqq">₩0</td>
-                <td id="weightTqqq">-</td>
-                <td id="adjTqqq">-</td>
+                <td id="targetColTqqq" style="color: var(--text-muted);">-</td>
+                <td id="weightTqqq" style="font-weight: 600;">-</td>
+                <td id="alertTqqq">-</td>
                 <td id="guideTqqq" class="guide-text">-</td>
             </tr>
             <tr style="background-color: #fdfdfd; border-top: 2px solid var(--border);">
-                <td>💵 현금 예수금 (₩)</td>
+                <td id="labelCash">💵 켈리 현금 버퍼</td>
                 <td>-</td>
                 <td><input type="number" id="cashWon" class="input-qty-large" value="0" min="0" step="1000000" oninput="updateData()"> ₩</td>
                 <td id="curCash">$0</td>
-                <td>-</td>
-                <td id="wonCash">₩0</td>
-                <td id="weightCash">-</td>
-                <td>-</td>
-                <td>-</td>
+                <td id="targetColCash" style="color: var(--primary); font-weight: 600;">-</td>
+                <td id="weightCash" style="font-weight: 600;">-</td>
+                <td id="alertCash">-</td>
+                <td id="guideCash" class="guide-text">-</td>
             </tr>
             <tr class="total-row">
                 <td>통합 총자산</td>
                 <td>-</td>
-                <td>-</td>
-                <td id="totalAmt">$0</td>
-                <td id="targetTotal">-</td>
                 <td id="totalWon">₩0</td>
+                <td id="totalAmt">$0</td>
                 <td>100%</td>
-                <td id="adjTotal">$0</td>
+                <td>100%</td>
+                <td>-</td>
                 <td>-</td>
             </tr>
             </tbody>
         </table>
     </div>
 
-    <!-- 2. 3:5:2 최종 목표 및 추가 매수 계산기 모듈 -->
+    <!-- 4억 연말 플랜 마스터 계산기 -->
     <div class="dash-card" style="grid-column: 1 / -1; text-align: left; background: #fff; border: 1px dashed var(--primary); padding: 20px; margin-top: 15px; border-radius: 12px;">
-        <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 15px; color: var(--text-main); font-weight: 700;">🎯 3:5:2 최종 목표 및 추가 매수 계산기 (연말 플랜 관리)</h3>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px; margin-top: 0;">목표 총자산에서 현금 버퍼를 제외한 금액을 자동으로 3:5:2 비율로 쪼개어 가이드를 연산합니다.</p>
-        
+        <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 15px; color: var(--text-main); font-weight: 700;">🎯 연말 플랜 셋업 마스터 계산기 (국면별 자동 분배)</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px; margin-top: 0;">목표 총자산을 입력하면 상단에서 선택한 시장 국면에 맞추어 현금과 주식(4:4:2) 배분 수량을 동적으로 연산합니다.</p>
+
         <div class="target-config-box">
             <div>
                 <label style="font-size: 12px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 5px;">최종 목표 총자산 (₩)</label>
-                <input type="number" id="targetOverallWon" class="input-qty-large" value="580000000" step="10000000" oninput="updateData()"> 원
+                <input type="number" id="targetOverallWon" class="input-qty-large" value="400000000" step="10000000" oninput="updateData()"> 원
             </div>
-            <div>
-                <label style="font-size: 12px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 5px;">최종 유지 현금 버퍼 (₩)</label>
-                <input type="number" id="targetCashBufferWon" class="input-qty-large" value="120000000" step="10000000" oninput="updateData()"> 원
+            <div style="display: flex; align-items: center; padding-top: 15px; color: var(--primary); font-size: 13px; font-weight: 700;">
+                <span id="displayTargetCash">자동 산출 현금 버퍼: ₩-</span>
             </div>
         </div>
-        
+
         <div class="table-responsive">
             <table class="target-table" style="margin-bottom: 0; background: #ffffff;">
                 <thead>
@@ -427,43 +220,31 @@
                     <th style="text-align: left;">자산명</th>
                     <th>최종 필요 목표 수량</th>
                     <th>현재 보유 수량</th>
-                    <th>앞으로 더 사야 할 수량 (Gap)</th>
-                    <th>추가 매수 금액 ($)</th>
+                    <th>추가 매수 필요 (Gap)</th>
                     <th>추가 매수 금액 (원화)</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
-                    <td style="text-align: left; font-weight: 600;">SPYM (1배 방패 30%)</td>
+                    <td id="calcLabelSpym" style="text-align: left; font-weight: 600;">SPYM</td>
                     <td id="goalQtySpym" style="font-weight: 600;">-</td>
-                    <td id="currentQtySpym">-</td>
+                    <td id="currentQtySpym2">-</td>
                     <td id="gapQtySpym" style="font-weight: 700; color: var(--primary);">-</td>
-                    <td id="gapUsdSpym">-</td>
                     <td id="gapWonSpym" style="font-weight: 600;">-</td>
                 </tr>
                 <tr>
-                    <td style="text-align: left; font-weight: 600;">QLD (2배 엔진 50%)</td>
+                    <td id="calcLabelQld" style="text-align: left; font-weight: 600;">QLD</td>
                     <td id="goalQtyQld" style="font-weight: 600;">-</td>
-                    <td id="currentQtyQld">-</td>
+                    <td id="currentQtyQld2">-</td>
                     <td id="gapQtyQld" style="font-weight: 700; color: var(--primary);">-</td>
-                    <td id="gapUsdQld">-</td>
                     <td id="gapWonQld" style="font-weight: 600;">-</td>
                 </tr>
                 <tr>
-                    <td style="text-align: left; font-weight: 600;">TQQQ (3배 엔진 20%)</td>
+                    <td id="calcLabelTqqq" style="text-align: left; font-weight: 600;">TQQQ</td>
                     <td id="goalQtyTqqq" style="font-weight: 600;">-</td>
-                    <td id="currentQtyTqqq">-</td>
+                    <td id="currentQtyTqqq2">-</td>
                     <td id="gapQtyTqqq" style="font-weight: 700; color: var(--primary);">-</td>
-                    <td id="gapUsdTqqq">-</td>
                     <td id="gapWonTqqq" style="font-weight: 600;">-</td>
-                </tr>
-                <tr class="total-row" style="background: #f1f5f9;">
-                    <td style="text-align: left;">🛒 총 주식 추가 매수금 합계</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td id="gapUsdTotal">-</td>
-                    <td id="gapWonTotal" style="color: var(--danger); font-size: 15px;">-</td>
                 </tr>
                 </tbody>
             </table>
@@ -474,30 +255,23 @@
 <script>
     let prices = { SPYM: 0, QLD: 0, TQQQ: 0, QQQ: 0, QQQ_high: 0, exchangeRate: 0 };
 
+    // 🚨 레짐 스위칭을 위한 비율 설정 맵핑 (50% 위기장 추가)
+    // 주식 비중 내 4:4:2 비율 적용
+    const REGIME_MAP = {
+        bull: { SPYM: 0.32, QLD: 0.32, TQQQ: 0.16, CASH: 0.20, name: "강세장" },
+        neutral: { SPYM: 0.28, QLD: 0.28, TQQQ: 0.14, CASH: 0.30, name: "평년장" },
+        bear: { SPYM: 0.24, QLD: 0.24, TQQQ: 0.12, CASH: 0.40, name: "하락장" },
+        crisis: { SPYM: 0.20, QLD: 0.20, TQQQ: 0.10, CASH: 0.50, name: "위기장" }
+    };
+
     const proxyPool = [
-        {
-            name: 'Corsproxy.io',
-            buildUrl: (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-            parse: async (res) => res.json()
-        },
-        {
-            name: 'AllOrigins',
-            buildUrl: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-            parse: async (res) => {
-                const json = await res.json();
-                return JSON.parse(json.contents);
-            }
-        },
-        {
-            name: 'Codetabs',
-            buildUrl: (url) => `https://api.codetabs.com/v1/proxy?url=${encodeURIComponent(url)}`,
-            parse: async (res) => res.json()
-        }
+        { name: 'Corsproxy.io', buildUrl: (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`, parse: async (res) => res.json() },
+        { name: 'AllOrigins', buildUrl: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, parse: async (res) => { const json = await res.json(); return JSON.parse(json.contents); } },
+        { name: 'Codetabs', buildUrl: (url) => `https://api.codetabs.com/v1/proxy?url=${encodeURIComponent(url)}`, parse: async (res) => res.json() }
     ];
 
     async function fetchPrices() {
         document.getElementById('updateTime').innerText = "🔄 실시간 시세 갱신 중...";
-        
         try {
             const fxResponse = await fetch('https://open.er-api.com/v6/latest/USD');
             if (fxResponse.ok) {
@@ -506,8 +280,7 @@
                 document.getElementById('exchangeRateDisplay').innerText = `₩${prices.exchangeRate.toFixed(2)}`;
             }
         } catch (e) {
-            console.error("환율 API 단절 대비 기본 안전값 세팅");
-            prices.exchangeRate = 1400; 
+            prices.exchangeRate = 1400;
         }
 
         const tickers = ['SPYM', 'QLD', 'TQQQ', 'QQQ'];
@@ -516,23 +289,15 @@
         for (let ticker of tickers) {
             let data = null;
             const targetUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?_=${Date.now()}`;
-
             for (let proxy of proxyPool) {
                 try {
                     const response = await fetch(proxy.buildUrl(targetUrl));
-                    if (response.ok) {
-                        data = await proxy.parse(response);
-                        break;
-                    }
-                } catch (e) {
-                    console.warn(`${ticker} 데이터 수집 중 ${proxy.name} 노드 우회. Failover 구동`);
-                }
+                    if (response.ok) { data = await proxy.parse(response); break; }
+                } catch (e) { }
             }
-
             if (data && data.chart && data.chart.result) {
                 const meta = data.chart.result[0].meta;
                 const currentPrice = meta.regularMarketPrice || meta.chartPreviousClose;
-
                 if (ticker === 'QQQ') {
                     prices['QQQ'] = currentPrice;
                     prices['QQQ_high'] = meta.fiftyTwoWeekHigh || currentPrice;
@@ -543,82 +308,31 @@
                         document.getElementById(`price${ticker}`).className = "";
                     }
                 }
-            } else {
-                hasError = true;
-                if (ticker !== 'QQQ' && document.getElementById(`price${ticker}`)) {
-                    document.getElementById(`price${ticker}`).innerText = "❌ 지연됨";
-                    document.getElementById(`price${ticker}`).className = "text-sell";
-                }
-            }
+            } else { hasError = true; }
         }
-
-        const now = new Date();
-        document.getElementById('updateTime').innerText = hasError 
-            ? "⚠️ 일부 시세 지연 (GitHub Pages 업로드 후 확인 권장)" 
-            : `🕒 동기화 완료 (${now.toLocaleTimeString()})`;
-
+        document.getElementById('updateTime').innerText = hasError ? "⚠️ 일부 시세 지연됨" : `🕒 동기화 완료 (${new Date().toLocaleTimeString()})`;
         updateData();
     }
 
     function loadInitialData() {
         const urlParams = new URLSearchParams(window.location.search);
-        const pSpym = urlParams.get('spym');
-        const pQld = urlParams.get('qld');
-        const pTqqq = urlParams.get('tqqq');
-        const pCash = urlParams.get('cash');
-        const pTgOver = urlParams.get('tgOver');
-        const pTgCash = urlParams.get('tgCash');
-
-        if (pSpym !== null || pQld !== null || pTqqq !== null || pCash !== null) {
-            if (pSpym !== null) document.getElementById('qtySpym').value = pSpym;
-            if (pQld !== null) document.getElementById('qtyQld').value = pQld;
-            if (pTqqq !== null) document.getElementById('qtyTqqq').value = pTqqq;
-            if (pCash !== null) document.getElementById('cashWon').value = pCash;
-            if (pTgOver !== null) document.getElementById('targetOverallWon').value = pTgOver;
-            if (pTgCash !== null) document.getElementById('targetCashBufferWon').value = pTgCash;
-            saveCurrentData(pSpym || 0, pQld || 0, pTqqq || 0, pCash || 0, pTgOver || 580000000, pTgCash || 120000000);
-        } else {
-            const savedSpymQty = localStorage.getItem('leverage_qty_spym');
-            const savedQldQty = localStorage.getItem('leverage_qty_qld');
-            const savedTqqqQty = localStorage.getItem('leverage_qty_tqqq');
-            const savedCashWon = localStorage.getItem('leverage_cash_won');
-            const savedTgOver = localStorage.getItem('leverage_tg_overall');
-            const savedTgCash = localStorage.getItem('leverage_tg_cash');
-
-            if (savedSpymQty !== null) document.getElementById('qtySpym').value = savedSpymQty;
-            if (savedQldQty !== null) document.getElementById('qtyQld').value = savedQldQty;
-            if (savedTqqqQty !== null) document.getElementById('qtyTqqq').value = savedTqqqQty;
-            if (savedCashWon !== null) document.getElementById('cashWon').value = savedCashWon;
-            if (savedTgOver !== null) document.getElementById('targetOverallWon').value = savedTgOver;
-            if (savedTgCash !== null) document.getElementById('targetCashBufferWon').value = savedTgCash;
-        }
+        ['qtySpym', 'qtyQld', 'qtyTqqq', 'cashWon', 'targetOverallWon', 'regimeSelect'].forEach(id => {
+            const val = urlParams.get(id) || localStorage.getItem(`v3_${id}`);
+            if(val) document.getElementById(id).value = val;
+        });
     }
 
-    function saveCurrentData(spymQty, qldQty, tqqqQty, cashWon, tgOver, tgCash) {
-        localStorage.setItem('leverage_qty_spym', spymQty);
-        localStorage.setItem('leverage_qty_qld', qldQty);
-        localStorage.setItem('leverage_qty_tqqq', tqqqQty);
-        localStorage.setItem('leverage_cash_won', cashWon);
-        localStorage.setItem('leverage_tg_overall', tgOver);
-        localStorage.setItem('leverage_tg_cash', tgCash);
+    function saveCurrentData(data) {
+        Object.keys(data).forEach(key => localStorage.setItem(`v3_${key}`, data[key]));
     }
 
     function copySyncUrl() {
-        const qtySpym = document.getElementById('qtySpym').value || 0;
-        const qtyQld = document.getElementById('qtyQld').value || 0;
-        const qtyTqqq = document.getElementById('qtyTqqq').value || 0;
-        const cashWon = document.getElementById('cashWon').value || 0;
-        const targetOverallWon = document.getElementById('targetOverallWon').value || 580000000;
-        const targetCashBufferWon = document.getElementById('targetCashBufferWon').value || 120000000;
-
-        const baseUrl = window.location.origin + window.location.pathname;
-        const syncUrl = `${baseUrl}?spym=${qtySpym}&qld=${qtyQld}&tqqq=${qtyTqqq}&cash=${cashWon}&tgOver=${targetOverallWon}&tgCash=${targetCashBufferWon}`;
-
-        navigator.clipboard.writeText(syncUrl).then(() => {
-            alert("🔗 동기화 주소가 복사되었습니다!\n\n예수금 및 모바일 최적화 레이아웃 정보가 포함된 안전한 마이그레이션 링크입니다.");
-        }).catch(err => {
-            alert("링크 복사 실패: " + syncUrl);
+        const params = new URLSearchParams();
+        ['qtySpym', 'qtyQld', 'qtyTqqq', 'cashWon', 'targetOverallWon', 'regimeSelect'].forEach(id => {
+            params.set(id, document.getElementById(id).value || '');
         });
+        const syncUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+        navigator.clipboard.writeText(syncUrl).then(() => alert("🔗 국면 설정이 포함된 동기화 주소가 복사되었습니다!"));
     }
 
     function updateData() {
@@ -626,185 +340,157 @@
         const qtyQld = parseFloat(document.getElementById('qtyQld').value) || 0;
         const qtyTqqq = parseFloat(document.getElementById('qtyTqqq').value) || 0;
         const cashWon = parseFloat(document.getElementById('cashWon').value) || 0;
-        
-        const targetOverallWon = parseFloat(document.getElementById('targetOverallWon').value) || 0;
-        const targetCashBufferWon = parseFloat(document.getElementById('targetCashBufferWon').value) || 0;
+        const targetOverallWon = parseFloat(document.getElementById('targetOverallWon').value) || 400000000;
+        const currentRegime = document.getElementById('regimeSelect').value;
+        const targetRatios = REGIME_MAP[currentRegime];
 
-        saveCurrentData(qtySpym, qtyQld, qtyTqqq, cashWon, targetOverallWon, targetCashBufferWon);
+        saveCurrentData({qtySpym, qtyQld, qtyTqqq, cashWon, targetOverallWon, regimeSelect: currentRegime});
+
+        document.getElementById('labelCashTarget').innerText = `현재 현금 버퍼 비중 (Target ${targetRatios.CASH * 100}%)`;
+        document.getElementById('labelStockTarget').innerText = `현재 주식 총 비중 (Target ${(1 - targetRatios.CASH) * 100}%)`;
+
+        const updateRowLabel = (asset, ratio) => {
+            document.getElementById(`label${asset}`).innerText = `${asset.toUpperCase()} (전체 ${ratio * 100}%)`;
+            document.getElementById(`targetCol${asset}`).innerText = `${ratio * 100}%`;
+            document.getElementById(`calcLabel${asset}`).innerText = `${asset.toUpperCase()} (전체 ${ratio * 100}%)`;
+        };
+        updateRowLabel('Spym', targetRatios.SPYM);
+        updateRowLabel('Qld', targetRatios.QLD);
+        updateRowLabel('Tqqq', targetRatios.TQQQ);
+        document.getElementById('labelCash').innerText = `💵 켈리 현금 버퍼 (${targetRatios.CASH * 100}%)`;
+        document.getElementById('targetColCash').innerText = `${targetRatios.CASH * 100}%`;
 
         if (prices.SPYM === 0 || prices.QLD === 0 || prices.TQQQ === 0) return;
 
         const currentRate = prices.exchangeRate > 0 ? prices.exchangeRate : 1400;
-
         const spymVal = qtySpym * prices.SPYM;
         const qldVal = qtyQld * prices.QLD;
         const tqqqVal = qtyTqqq * prices.TQQQ;
-        const cashValUSD = cashWon / currentRate; 
-
-        const stockTotal = spymVal + qldVal + tqqqVal; 
-        const overallTotalUSD = stockTotal + cashValUSD; 
+        const cashValUSD = cashWon / currentRate;
+        const overallTotalUSD = spymVal + qldVal + tqqqVal + cashValUSD;
 
         document.getElementById('curSpym').innerText = '$' + Math.round(spymVal).toLocaleString();
         document.getElementById('curQld').innerText = '$' + Math.round(qldVal).toLocaleString();
         document.getElementById('curTqqq').innerText = '$' + Math.round(tqqqVal).toLocaleString();
         document.getElementById('curCash').innerText = '$' + Math.round(cashValUSD).toLocaleString();
         document.getElementById('totalAmt').innerText = '$' + Math.round(overallTotalUSD).toLocaleString();
+        document.getElementById('totalWon').innerText = '₩' + Math.round(overallTotalUSD * currentRate).toLocaleString();
 
-        if (overallTotalUSD === 0) {
-            document.getElementById('currentLeverage').innerText = "0.00";
-            document.getElementById('effectiveLeverage').innerText = "0.00";
-            document.getElementById('statusSignal').innerText = "보유 자산을 입력하시면 통합 포트폴리오 진단이 시작됩니다.";
-            return;
-        }
-
-        const targetSpym = stockTotal * 0.30;
-        const targetQld = stockTotal * 0.50;
-        const targetTqqq = stockTotal * 0.20;
-        document.getElementById('targetSpym').innerText = '$' + Math.round(targetSpym).toLocaleString();
-        document.getElementById('targetQld').innerText = '$' + Math.round(targetQld).toLocaleString();
-        document.getElementById('targetTqqq').innerText = '$' + Math.round(targetTqqq).toLocaleString();
-        document.getElementById('targetTotal').innerText = '$' + Math.round(stockTotal).toLocaleString();
-
-        const wonSpym = spymVal * currentRate;
-        const wonQld = qldVal * currentRate;
-        const wonTqqq = tqqqVal * currentRate;
-        const overallTotalWon = (stockTotal * currentRate) + cashWon;
-
-        document.getElementById('wonSpym').innerText = '₩' + Math.round(wonSpym).toLocaleString();
-        document.getElementById('wonQld').innerText = '₩' + Math.round(wonQld).toLocaleString();
-        document.getElementById('wonTqqq').innerText = '₩' + Math.round(wonTqqq).toLocaleString();
-        document.getElementById('wonCash').innerText = '₩' + Math.round(cashWon).toLocaleString();
-        document.getElementById('totalWon').innerText = '₩' + Math.round(overallTotalWon).toLocaleString();
+        if (overallTotalUSD === 0) return;
 
         const wSpym = spymVal / overallTotalUSD;
         const wQld = qldVal / overallTotalUSD;
         const wTqqq = tqqqVal / overallTotalUSD;
         const wCash = cashValUSD / overallTotalUSD;
+        const wStock = wSpym + wQld + wTqqq;
 
         document.getElementById('weightSpym').innerText = (wSpym * 100).toFixed(1) + '%';
         document.getElementById('weightQld').innerText = (wQld * 100).toFixed(1) + '%';
         document.getElementById('weightTqqq').innerText = (wTqqq * 100).toFixed(1) + '%';
         document.getElementById('weightCash').innerText = (wCash * 100).toFixed(1) + '%';
+        document.getElementById('currentStockWeight').innerText = (wStock * 100).toFixed(1) + '%';
+        document.getElementById('currentCashWeight').innerText = (wCash * 100).toFixed(1) + '%';
 
-        const adjSpym = targetSpym - spymVal;
-        const adjQld = targetQld - qldVal;
-        const adjTqqq = targetTqqq - tqqqVal;
-        document.getElementById('adjSpym').innerText = '$' + Math.round(adjSpym).toLocaleString();
-        document.getElementById('adjQld').innerText = '$' + Math.round(adjQld).toLocaleString();
-        document.getElementById('adjTqqq').innerText = '$' + Math.round(adjTqqq).toLocaleString();
-        document.getElementById('adjTotal').innerText = '$' + Math.round(targetSpym + targetQld + targetTqqq - stockTotal).toLocaleString();
+        const evalTarget = (weight, target) => {
+            const diff = (weight - target) * 100;
+            if (diff > 5) return { status: 'OVER', val: diff };
+            if (diff < -5) return { status: 'UNDER', val: diff };
+            return { status: 'OK', val: diff };
+        };
 
-        renderGuide('guideSpym', adjSpym);
-        renderGuide('guideQld', adjQld);
-        renderGuide('guideTqqq', adjTqqq);
+        const renderAlert = (id, result) => {
+            const el = document.getElementById(id);
+            if (result.status === 'OVER') { el.innerText = `+${result.val.toFixed(1)}% 초과`; el.style.color = 'var(--danger)'; }
+            else if (result.status === 'UNDER') { el.innerText = `${result.val.toFixed(1)}% 부족`; el.style.color = 'var(--primary)'; }
+            else { el.innerText = '안정권'; el.style.color = 'var(--success)'; }
+        };
 
-        const stockLeverage = stockTotal > 0 ? ((spymVal * 1) + (qldVal * 2) + (tqqqVal * 3)) / stockTotal : 0;
-        document.getElementById('currentLeverage').innerText = stockLeverage.toFixed(2);
+        const resSpym = evalTarget(wSpym, targetRatios.SPYM);
+        const resQld = evalTarget(wQld, targetRatios.QLD);
+        const resTqqq = evalTarget(wTqqq, targetRatios.TQQQ);
+        const resCash = evalTarget(wCash, targetRatios.CASH);
 
-        const effectiveLeverage = ((spymVal * 1) + (qldVal * 2) + (tqqqVal * 3)) / overallTotalUSD;
-        document.getElementById('effectiveLeverage').innerText = effectiveLeverage.toFixed(2);
+        renderAlert('alertSpym', resSpym);
+        renderAlert('alertQld', resQld);
+        renderAlert('alertTqqq', resTqqq);
+        renderAlert('alertCash', resCash);
 
-        // 🚨 최종 목표 동적 매핑 역산 모듈
-        const targetStockWonTotal = targetOverallWon - targetCashBufferWon;
-        const targetStockUsdTotal = targetStockWonTotal / currentRate;
+        const renderAction = (id, currentVal, targetRatio) => {
+            const targetVal = overallTotalUSD * targetRatio;
+            const diff = targetVal - currentVal;
+            const el = document.getElementById(id);
+            if (Math.abs((currentVal/overallTotalUSD - targetRatio)*100) > 5) {
+                if (diff > 0) { el.innerText = "▲ $" + Math.round(diff).toLocaleString() + " 매수"; el.className = "guide-text text-buy"; }
+                else { el.innerText = "▼ $" + Math.round(Math.abs(diff)).toLocaleString() + " 매도"; el.className = "guide-text text-sell"; }
+            } else {
+                el.innerText = "HOLD (관망)"; el.className = "guide-text text-hold";
+            }
+        };
 
-        const planTargetSpymUSD = targetStockUsdTotal * 0.30;
-        const planTargetQldUSD = targetStockUsdTotal * 0.50;
-        const planTargetTqqqUSD = targetStockUsdTotal * 0.20;
+        renderAction('guideSpym', spymVal, targetRatios.SPYM);
+        renderAction('guideQld', qldVal, targetRatios.QLD);
+        renderAction('guideTqqq', tqqqVal, targetRatios.TQQQ);
+        renderAction('guideCash', cashValUSD, targetRatios.CASH);
 
-        const goalQtySpym = prices.SPYM > 0 ? Math.round(planTargetSpymUSD / prices.SPYM) : 0;
-        const goalQtyQld = prices.QLD > 0 ? Math.round(planTargetQldUSD / prices.QLD) : 0;
-        const goalQtyTqqq = prices.TQQQ > 0 ? Math.round(planTargetTqqqUSD / prices.TQQQ) : 0;
+        // 🚨 MDD 및 국면 스위칭 권고 로직 (위기장 추가)
+        let qqqMdd = 0;
+        let mddWarning = "";
+        if (prices.QQQ > 0 && prices.QQQ_high > 0) {
+            qqqMdd = ((prices.QQQ - prices.QQQ_high) / prices.QQQ_high) * 100;
+            document.getElementById('nasdaqMdd').innerText = qqqMdd.toFixed(2) + '%';
+            document.getElementById('nasdaqPeak').innerText = `(최고가: $${prices.QQQ_high.toFixed(2)})`;
 
-        const gapQtySpym = Math.max(0, goalQtySpym - qtySpym);
-        const gapQtyQld = Math.max(0, goalQtyQld - qtyQld);
-        const gapQtyTqqq = Math.max(0, goalQtyTqqq - qtyTqqq);
+            if (qqqMdd < -30 && currentRegime !== 'crisis') {
+                mddWarning = ` 🚨 [시스템 경고] MDD -30% 돌파! 극단적 위기장 모드로 전환하여 현금을 50%로 격상하시길 강력히 권장합니다.`;
+            } else if (qqqMdd < -20 && qqqMdd >= -30 && currentRegime !== 'bear' && currentRegime !== 'crisis') {
+                mddWarning = ` ⚠️ [국면 전환 권고] MDD가 -20%를 넘었습니다! 방어 모드(하락장)로 전환하여 현금을 40%로 올리시길 권장합니다.`;
+            } else if (qqqMdd > -5 && currentRegime !== 'bull') {
+                mddWarning = ` 🚀 [국면 전환 권고] 전고점 돌파 임박! 공격 모드(강세장)로 전환하여 수익을 극대화하시길 권장합니다.`;
+            }
+        }
 
-        const gapUsdSpym = gapQtySpym * prices.SPYM;
-        const gapUsdQld = gapQtyQld * prices.QLD;
-        const gapUsdTqqq = gapQtyTqqq * prices.TQQQ;
-        const gapUsdTotal = gapUsdSpym + gapUsdQld + gapUsdTqqq;
+        const signalEl = document.getElementById('statusSignal');
+        if (wCash < targetRatios.CASH - 0.05) {
+            signalEl.innerText = `🚨 [탐욕 경고] 현금 버퍼 부족! 현재 국면 목표치(${targetRatios.CASH*100}%)에 맞춰 초과 주식을 매도하세요.` + mddWarning;
+            signalEl.className = "dash-card alert-zone status-danger";
+        } else if (resSpym.status !== 'OK' || resQld.status !== 'OK' || resTqqq.status !== 'OK') {
+            signalEl.innerText = "⚠️ [비중 이탈] 자산이 목표치에서 ±5%를 벗어났습니다. 오더 티켓에 따라 리밸런싱을 진행하세요." + mddWarning;
+            signalEl.className = "dash-card alert-zone status-rebalance";
+        } else {
+            signalEl.innerText = `✅ [${targetRatios.name} 셋업] 시스템 안정 (HOLD) : 국면에 맞춘 밸런스가 완벽하게 유지 중입니다.` + mddWarning;
+            signalEl.className = mddWarning ? "dash-card alert-zone status-rebalance" : "dash-card alert-zone status-hold";
+            if(mddWarning && mddWarning.includes('위기장')) signalEl.style.color = "#b91c1c";
+            else if(mddWarning) signalEl.style.color = "#92400e";
+        }
 
-        const gapWonSpym = gapUsdSpym * currentRate;
-        const gapWonQld = gapUsdQld * currentRate;
-        const gapWonTqqq = gapUsdTqqq * currentRate;
-        const gapWonTotal = gapUsdTotal * currentRate;
+        const targetCashWon = targetOverallWon * targetRatios.CASH;
+        document.getElementById('displayTargetCash').innerText = `국면 반영 현금 버퍼 (${targetRatios.CASH * 100}%): ₩${Math.round(targetCashWon).toLocaleString()}`;
+
+        const targetUsdTotal = targetOverallWon / currentRate;
+        const goalQtySpym = prices.SPYM > 0 ? Math.round((targetUsdTotal * targetRatios.SPYM) / prices.SPYM) : 0;
+        const goalQtyQld = prices.QLD > 0 ? Math.round((targetUsdTotal * targetRatios.QLD) / prices.QLD) : 0;
+        const goalQtyTqqq = prices.TQQQ > 0 ? Math.round((targetUsdTotal * targetRatios.TQQQ) / prices.TQQQ) : 0;
 
         document.getElementById('goalQtySpym').innerText = goalQtySpym.toLocaleString() + ' 주';
         document.getElementById('goalQtyQld').innerText = goalQtyQld.toLocaleString() + ' 주';
         document.getElementById('goalQtyTqqq').innerText = goalQtyTqqq.toLocaleString() + ' 주';
 
-        document.getElementById('currentQtySpym').innerText = qtySpym.toLocaleString() + ' 주';
-        document.getElementById('currentQtyQld').innerText = qtyQld.toLocaleString() + ' 주';
-        document.getElementById('currentQtyTqqq').innerText = qtyTqqq.toLocaleString() + ' 주';
+        document.getElementById('currentQtySpym2').innerText = qtySpym.toLocaleString() + ' 주';
+        document.getElementById('currentQtyQld2').innerText = qtyQld.toLocaleString() + ' 주';
+        document.getElementById('currentQtyTqqq2').innerText = qtyTqqq.toLocaleString() + ' 주';
 
-        document.getElementById('gapQtySpym').innerText = gapQtySpym > 0 ? `+ ${gapQtySpym.toLocaleString()} 주` : '완료';
-        document.getElementById('gapQtyQld').innerText = gapQtyQld > 0 ? `+ ${gapQtyQld.toLocaleString()} 주` : '완료';
-        document.getElementById('gapQtyTqqq').innerText = gapQtyTqqq > 0 ? `+ ${gapQtyTqqq.toLocaleString()} 주` : '완료';
+        const renderGap = (idQty, idWon, goal, current, price) => {
+            const gap = Math.max(0, goal - current);
+            document.getElementById(idQty).innerText = gap > 0 ? `+ ${gap.toLocaleString()} 주` : '완료';
+            document.getElementById(idWon).innerText = gap > 0 ? '₩' + Math.round(gap * price * currentRate).toLocaleString() : '-';
+        };
 
-        document.getElementById('gapUsdSpym').innerText = '$' + Math.round(gapUsdSpym).toLocaleString();
-        document.getElementById('gapUsdQld').innerText = '$' + Math.round(gapUsdQld).toLocaleString();
-        document.getElementById('gapUsdTqqq').innerText = '$' + Math.round(gapUsdTqqq).toLocaleString();
-        document.getElementById('gapUsdTotal').innerText = '$' + Math.round(gapUsdTotal).toLocaleString();
-
-        document.getElementById('gapWonSpym').innerText = '₩' + Math.round(gapWonSpym).toLocaleString();
-        document.getElementById('gapWonQld').innerText = '₩' + Math.round(gapWonQld).toLocaleString();
-        document.getElementById('gapWonTqqq').innerText = '₩' + Math.round(gapWonTqqq).toLocaleString();
-        document.getElementById('gapWonTotal').innerText = '₩' + Math.round(gapWonTotal).toLocaleString();
-
-        let qqqMdd = 0;
-        let mddStatusText = "";
-        if (prices.QQQ > 0 && prices.QQQ_high > 0) {
-            qqqMdd = ((prices.QQQ - prices.QQQ_high) / prices.QQQ_high) * 100;
-            const mddEl = document.getElementById('nasdaqMdd');
-            mddEl.innerText = qqqMdd.toFixed(2) + '%';
-            document.getElementById('nasdaqPeak').innerText = `(52주 최고가: $${prices.QQQ_high.toFixed(2)} / 현재: $${prices.QQQ.toFixed(2)})`;
-
-            if (qqqMdd <= -15 && qqqMdd >= -20) {
-                mddEl.style.color = "var(--warning)";
-                mddStatusText = " 🎯 [알림] 나스닥 MDD 1차 타겟 진입! 대기 중인 현금 예수금 분사를 준비하세요.";
-            } else if (qqqMdd < -20) {
-                mddEl.style.color = "var(--danger)";
-                mddStatusText = " ⚠️ [경고] 나스닥 낙폭 -20% 초과! 방패(SPYM) 및 현금 예수금을 활용한 대규모 추가 수혈 구간입니다.";
-            } else {
-                mddEl.style.color = "var(--text-main)";
-            }
-        }
-
-        const signalEl = document.getElementById('statusSignal');
-        if (stockLeverage >= 1.95) {
-            signalEl.innerText = "🚨 [과열] 주식 엔진 배수 과다! 상승한 QLD/TQQQ를 일부 매도하여 방패(SPYM)를 채우세요." + mddStatusText;
-            signalEl.className = "dash-card alert-zone status-rebalance";
-            signalEl.style.color = "#ef4444";
-        } else if (stockLeverage <= 1.85) {
-            signalEl.innerText = "📉 [조정/폭락] 주식 엔진 방패 과다! SPYM을 매도하여 저렴해진 QLD/TQQQ 엔진을 수혈하세요." + mddStatusText;
-            signalEl.className = "dash-card alert-zone status-rebalance";
-            signalEl.style.color = "#f59e0b";
-        } else {
-            signalEl.innerText = mddStatusText ? mddStatusText : "✅ 정상 범위 (HOLD): 주식 타격대(3:5:2)와 현금 예비군이 완벽한 공수 밸런스를 유지 중입니다.";
-            signalEl.className = mddStatusText ? "dash-card alert-zone status-rebalance" : "dash-card alert-zone status-hold";
-            signalEl.style.color = mddStatusText ? "#92400e" : "#065f46";
-        }
+        renderGap('gapQtySpym', 'gapWonSpym', goalQtySpym, qtySpym, prices.SPYM);
+        renderGap('gapQtyQld', 'gapWonQld', goalQtyQld, qtyQld, prices.QLD);
+        renderGap('gapQtyTqqq', 'gapWonTqqq', goalQtyTqqq, qtyTqqq, prices.TQQQ);
     }
 
-    function renderGuide(elementId, adjValue) {
-        const el = document.getElementById(elementId);
-        if (adjValue > 0.5) {
-            el.innerText = "▲ $" + Math.round(adjValue).toLocaleString() + " 매수";
-            el.className = "guide-text text-buy";
-        } else if (adjValue < -0.5) {
-            el.innerText = "▼ $" + Math.round(Math.abs(adjValue)).toLocaleString() + " 매도";
-            el.className = "guide-text text-sell";
-        } else {
-            el.innerText = "HOLD";
-            el.className = "guide-text text-hold";
-        }
-    }
-
-    window.onload = function() {
-        loadInitialData();
-        fetchPrices();
-    };
+    window.onload = function() { loadInitialData(); fetchPrices(); };
 </script>
 </body>
 </html>
