@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>섀논-켈리 마스터 대시보드 (동적 국면 전환)</title>
+    <title>섀논-켈리 마스터 대시보드 (QQQM 영구 금고 버전 Pro)</title>
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -37,13 +37,12 @@
 
         .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
         .dash-card { border: 1px solid var(--border); border-radius: 12px; padding: 18px 10px; text-align: center; background: #fafafa; transition: all 0.3s ease; }
-        .dash-card.alert-zone { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; line-height: 1.5; padding: 15px; }
+        .dash-card.alert-zone { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; line-height: 1.6; padding: 15px; }
         .dash-label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-weight: 600; }
         .dash-value { font-size: 24px; font-weight: 700; color: var(--primary); }
 
         .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 25px; border: 1px solid var(--border); border-radius: 8px; background: #ffffff; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 980px; }
-        .target-table { min-width: 850px; }
         th, td { padding: 14px 10px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
         th:first-child, td:first-child { text-align: left; font-weight: 600; position: sticky; left: 0; background: inherit; z-index: 1; }
         td:first-child { background: #fafafa; }
@@ -65,8 +64,18 @@
         .loading-text { color: var(--primary); font-weight: bold; }
 
         .target-config-box { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px; background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        .profit-rule-box { font-size: 12px; color: #1e3a8a; font-weight: 600; margin-top: 6px; background: #eff6ff; padding: 6px 12px; border-radius: 6px; border: 1px dashed #3b82f6; width: 90%; text-align: center; }
+
+        /* 🚨 추가된 모던 로드맵 그래픽 레이아웃 CSS */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; width: 100%; box-sizing: border-box; }
+        .card-zone { border: 1px solid var(--border); padding: 18px; border-radius: 10px; box-sizing: border-box; }
+        .card-zone-title { font-size: 13px; font-weight: 700; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .progress-container { background: #e2e8f0; border-radius: 8px; height: 10px; width: 100%; overflow: hidden; margin-top: 6px; margin-bottom: 10px; }
+        .progress-bar { height: 100%; background: var(--primary); transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .progress-bar.vault { background: var(--success); }
 
         @media (max-width: 992px) { .dashboard { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
         @media (max-width: 576px) {
             body { padding: 10px; }
             .container { padding: 15px; border-radius: 12px; }
@@ -78,27 +87,24 @@
             .regime-selector { width: 100%; text-align: center; }
             .btn-refresh, .btn-sync { width: 100%; padding: 10px; }
             .dashboard { grid-template-columns: 1fr; gap: 10px; }
-            .target-config-box { flex-direction: column; gap: 12px; padding: 10px; }
-            .target-config-box div { width: 100%; }
-            .input-qty-large { width: calc(100% - 30px); box-sizing: border-box; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>섀논-켈리 마스터 대시보드 (동적 국면 전환)</h1>
-    <div class="subtitle">선택한 시장 국면에 따라 마스터 현금/주식 비율이 동적으로 재조정됩니다 (±5% 리밸런싱)</div>
+    <h1>섀논-켈리 마스터 대시보드 (QQQM 영구 금고 버전 Pro)</h1>
+    <div class="subtitle">활동 자산(현금/QLD/TQQQ) 간의 변동성 리밸런싱 및 QQQM 금고 단방향 무제한 적립 시스템</div>
 
     <div class="header-actions">
         <div class="price-status" id="updateTime">시세 로드 중...</div>
         <div class="action-btns">
-            <!-- 🚨 국면(Regime) 선택 드롭다운: 위기장 50% 추가 -->
+            <span id="exchangeRateDisplay" style="font-size: 13px; font-weight: 600; color: #475569; margin-right: 10px;">₩-,--.-</span>
             <select id="regimeSelect" class="regime-selector" onchange="updateData()">
-                <option value="bull">🔥 강세장 (현금 20% / 주식 80%)</option>
-                <option value="neutral" selected>⚖️ 평년장 (현금 30% / 주식 70%)</option>
-                <option value="bear">❄️ 하락장 (현금 40% / 주식 60%)</option>
-                <option value="crisis">🚨 위기장 (현금 50% / 주식 50%)</option>
+                <option value="bull">🔥 강세장 (현금 15% / QLD 55% / TQQQ 30% 활동풀)</option>
+                <option value="neutral" selected>⚖️ 평년장 (현금 25% / QLD 50% / TQQQ 25% 활동풀)</option>
+                <option value="bear">❄️ 하락장 (현금 40% / QLD 40% / TQQQ 20% 활동풀)</option>
+                <option value="crisis">🚨 위기장 (현금 55% / QLD 30% / TQQQ 15% 활동풀)</option>
             </select>
             <button class="btn-sync" onclick="copySyncUrl()">🔗 설정 복사</button>
             <button class="btn-refresh" onclick="fetchPrices()">🔄 시세 갱신</button>
@@ -107,21 +113,21 @@
 
     <div class="dashboard">
         <div class="dash-card">
-            <div class="dash-label" id="labelCashTarget">현재 현금 버퍼 비중</div>
+            <div class="dash-label">통합 실질 레버리지 배수 (전체)</div>
+            <div class="dash-value" id="effectiveLeverage" style="color: #0f172a;">-.--</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-label">활동 풀 내 현금 비중</div>
             <div class="dash-value" id="currentCashWeight">-.--%</div>
         </div>
         <div class="dash-card">
-            <div class="dash-label" id="labelStockTarget">현재 주식 총 비중</div>
-            <div class="dash-value" id="currentStockWeight" style="color: #0f172a;">-.--%</div>
+            <div class="dash-label">총자산 중 QQQM 금고 비중</div>
+            <div class="dash-value" id="currentQqqmWeight" style="color: #10b981;">-.--%</div>
         </div>
         <div class="dash-card">
             <div class="dash-label">나스닥(QQQ) 실시간 MDD</div>
             <div class="dash-value" id="nasdaqMdd" style="color: var(--text-main);">-.--%</div>
             <div class="dash-label" id="nasdaqPeak" style="font-size: 10px; margin-top: 3px; color: var(--text-muted);">(52주 최고가 로드 중)</div>
-        </div>
-        <div class="dash-card">
-            <div class="dash-label">실시간 환율</div>
-            <div class="dash-value" id="exchangeRateDisplay" style="color: #475569;">₩-,--.-</div>
         </div>
         <div class="dash-card alert-zone status-hold" id="statusSignal">
             시세를 불러오는 중입니다...
@@ -137,25 +143,25 @@
                 <th>현재가 ($)</th>
                 <th>보유 수량 / 원화</th>
                 <th>평가 금액 ($)</th>
-                <th>목표 비율</th>
-                <th>현재 비중</th>
-                <th>±5% 이탈 여부</th>
+                <th>활동풀 목표</th>
+                <th>현재 비중 (풀/전체)</th>
+                <th>비중 이탈 상태</th>
                 <th>기계적 오더 티켓 ($)</th>
             </tr>
             </thead>
             <tbody>
-            <tr>
-                <td id="labelSpym">SPYM (방어)</td>
-                <td id="priceSPYM" class="loading-text">Loading..</td>
-                <td><input type="number" id="qtySpym" class="input-qty" value="0" min="0" oninput="updateData()"></td>
-                <td id="curSpym">$0</td>
-                <td id="targetColSpym" style="color: var(--text-muted);">-</td>
-                <td id="weightSpym" style="font-weight: 600;">-</td>
-                <td id="alertSpym">-</td>
-                <td id="guideSpym" class="guide-text">-</td>
+            <tr style="background-color: #f0fdf4;">
+                <td style="font-weight: 700; color: #166534;">💎 QQQM (영구 금고)</td>
+                <td id="priceQQQM" class="loading-text">Loading..</td>
+                <td><input type="number" id="qtyQqqm" class="input-qty" value="0" min="0" oninput="updateData()"></td>
+                <td id="curQqqm">$0</td>
+                <td style="color: #166534; font-weight: bold; text-align: center;">영구 적립</td>
+                <td id="weightQqqm" style="font-weight: 600; color: #166534;">-</td>
+                <td style="color: #166534; font-weight: bold; text-align: center;">매도 없음</td>
+                <td style="color: #166534; font-weight: bold; text-align: center;">⚡ 영구 HOLD</td>
             </tr>
             <tr>
-                <td id="labelQld">QLD (엔진)</td>
+                <td>QLD (엔진)</td>
                 <td id="priceQLD" class="loading-text">Loading..</td>
                 <td><input type="number" id="qtyQld" class="input-qty" value="0" min="0" oninput="updateData()"></td>
                 <td id="curQld">$0</td>
@@ -165,7 +171,7 @@
                 <td id="guideQld" class="guide-text">-</td>
             </tr>
             <tr>
-                <td id="labelTqqq">TQQQ (폭발)</td>
+                <td>TQQQ (폭발)</td>
                 <td id="priceTQQQ" class="loading-text">Loading..</td>
                 <td><input type="number" id="qtyTqqq" class="input-qty" value="0" min="0" oninput="updateData()"></td>
                 <td id="curTqqq">$0</td>
@@ -175,7 +181,7 @@
                 <td id="guideTqqq" class="guide-text">-</td>
             </tr>
             <tr style="background-color: #fdfdfd; border-top: 2px solid var(--border);">
-                <td id="labelCash">💵 켈리 현금 버퍼</td>
+                <td>💵 켈리 현금 버퍼</td>
                 <td>-</td>
                 <td><input type="number" id="cashWon" class="input-qty-large" value="0" min="0" step="1000000" oninput="updateData()"> ₩</td>
                 <td id="curCash">$0</td>
@@ -189,8 +195,8 @@
                 <td>-</td>
                 <td id="totalWon">₩0</td>
                 <td id="totalAmt">$0</td>
-                <td>100%</td>
-                <td>100%</td>
+                <td>-</td>
+                <td>-</td>
                 <td>-</td>
                 <td>-</td>
             </tr>
@@ -198,70 +204,66 @@
         </table>
     </div>
 
-    <!-- 4억 연말 플랜 마스터 계산기 -->
-    <div class="dash-card" style="grid-column: 1 / -1; text-align: left; background: #fff; border: 1px dashed var(--primary); padding: 20px; margin-top: 15px; border-radius: 12px;">
-        <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 15px; color: var(--text-main); font-weight: 700;">🎯 연말 플랜 셋업 마스터 계산기 (국면별 자동 분배)</h3>
-        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px; margin-top: 0;">목표 총자산을 입력하면 상단에서 선택한 시장 국면에 맞추어 현금과 주식(4:4:2) 배분 수량을 동적으로 연산합니다.</p>
+    <!-- 🚨 [UI 대개편] 자산 마일스톤 & 영구 금고 목표 대시보드 -->
+    <div class="dash-card" style="grid-column: 1 / -1; text-align: left; background: #fff; border: 1px solid var(--primary); padding: 25px; margin-top: 20px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.05);">
+        <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 16px; color: var(--text-main); font-weight: 700;">🎯 영구 자산 마일스톤 & 금고 로드맵</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px; margin-top: 0;">최종 도달 자산 목표를 설정하면, 초기 황금 분배 공식<strong>[금고 20% : 현금 20% : QLD 40% : TQQQ 20%]</strong>에 따른 실시간 원화 매칭률과 부족분을 시각화하여 추적합니다.</p>
 
-        <div class="target-config-box">
-            <div>
-                <label style="font-size: 12px; font-weight: 600; color: var(--text-main); display: block; margin-bottom: 5px;">최종 목표 총자산 (₩)</label>
-                <input type="number" id="targetOverallWon" class="input-qty-large" value="400000000" step="10000000" oninput="updateData()"> 원
-            </div>
-            <div style="display: flex; align-items: center; padding-top: 15px; color: var(--primary); font-size: 13px; font-weight: 700;">
-                <span id="displayTargetCash">자동 산출 현금 버퍼: ₩-</span>
-            </div>
+        <div style="margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border); display: inline-block;">
+            <label style="font-size: 13px; font-weight: 700; color: var(--text-main); display: inline-block; margin-bottom: 6px;">🏁 최종 목표 자산 이정표 설정 (₩)</label><br>
+            <input type="number" id="targetOverallWon" class="input-qty-large" value="500000000" step="10000000" oninput="updateData()" style="font-size: 16px; padding: 6px 12px; width: 180px; font-weight: bold; color: var(--primary); border: 2px solid var(--primary); border-radius: 6px;"> <span style="font-weight: 700; font-size: 16px; color: var(--text-main);">원</span>
         </div>
 
-        <div class="table-responsive">
-            <table class="target-table" style="margin-bottom: 0; background: #ffffff;">
-                <thead>
-                <tr style="background: #f8fafc;">
-                    <th style="text-align: left;">자산명</th>
-                    <th>최종 필요 목표 수량</th>
-                    <th>현재 보유 수량</th>
-                    <th>추가 매수 필요 (Gap)</th>
-                    <th>추가 매수 금액 (원화)</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td id="calcLabelSpym" style="text-align: left; font-weight: 600;">SPYM</td>
-                    <td id="goalQtySpym" style="font-weight: 600;">-</td>
-                    <td id="currentQtySpym2">-</td>
-                    <td id="gapQtySpym" style="font-weight: 700; color: var(--primary);">-</td>
-                    <td id="gapWonSpym" style="font-weight: 600;">-</td>
-                </tr>
-                <tr>
-                    <td id="calcLabelQld" style="text-align: left; font-weight: 600;">QLD</td>
-                    <td id="goalQtyQld" style="font-weight: 600;">-</td>
-                    <td id="currentQtyQld2">-</td>
-                    <td id="gapQtyQld" style="font-weight: 700; color: var(--primary);">-</td>
-                    <td id="gapWonQld" style="font-weight: 600;">-</td>
-                </tr>
-                <tr>
-                    <td id="calcLabelTqqq" style="text-align: left; font-weight: 600;">TQQQ</td>
-                    <td id="goalQtyTqqq" style="font-weight: 600;">-</td>
-                    <td id="currentQtyTqqq2">-</td>
-                    <td id="gapQtyTqqq" style="font-weight: 700; color: var(--primary);">-</td>
-                    <td id="gapWonTqqq" style="font-weight: 600;">-</td>
-                </tr>
-                </tbody>
-            </table>
+        <div class="grid-2">
+            <!-- 🔒 영구 안전 금고 진영 -->
+            <div class="card-zone" style="border-left: 4px solid var(--success); background: #f0fdf4;">
+                <div class="card-zone-title" style="color: #166534;">🔒 영구 자산 금고 진영 (Sink Zone) <span style="font-size: 11px; background: #dcfce7; padding: 2px 6px; border-radius: 4px; color: #15803d;">단방향 무한 수확</span></div>
+
+                <div style="font-size: 12px; font-weight: 600; color: #334155; margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>💎 QQQM 영구 금고 (목표 20%)</span>
+                    <span id="txtQqqmProg" style="font-weight: 700; color: #166534;">-</span>
+                </div>
+                <div class="progress-container"><div id="barQqqm" class="progress-bar vault" style="width: 0%;"></div></div>
+                <div id="gapQqqmProg" style="font-size: 11px; font-weight: 700; color: #15803d; text-align: right;">-</div>
+
+                <div style="font-size: 12px; font-weight: 600; color: #334155; margin-top: 15px; display: flex; justify-content: space-between;">
+                    <span>CMA 폭발 방지 현금 버퍼 (목표 20%)</span>
+                    <span id="txtCashProg" style="font-weight: 700; color: #0369a1;">-</span>
+                </div>
+                <div class="progress-container"><div id="barCash" class="progress-bar" style="width: 0%; background: #0ea5e9;"></div></div>
+                <div id="gapCashProg" style="font-size: 11px; font-weight: 700; color: #0369a1; text-align: right;">-</div>
+            </div>
+
+            <!-- ⚡ 활동 레버리지 엔진 진영 -->
+            <div class="card-zone" style="border-left: 4px solid var(--primary); background: #f8fafc;">
+                <div class="card-zone-title" style="color: #1e3a8a;">⚡ 활동 변동성 엔진 진영 (Active Engine) <span style="font-size: 11px; background: #dbeafe; padding: 2px 6px; border-radius: 4px; color: #2563eb;">섀논 변동성 수확</span></div>
+
+                <div style="font-size: 12px; font-weight: 600; color: #334155; margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>📈 QLD 메인 모터 (목표 40%)</span>
+                    <span id="txtQldProg" style="font-weight: 700; color: var(--primary);">-</span>
+                </div>
+                <div class="progress-container"><div id="barQld" class="progress-bar" style="width: 0%;"></div></div>
+                <div id="gapQldProg" style="font-size: 11px; font-weight: 700; color: #1d4ed8; text-align: right;">-</div>
+
+                <div style="font-size: 12px; font-weight: 600; color: #334155; margin-top: 15px; display: flex; justify-content: space-between;">
+                    <span>🚀 TQQQ 고출력 터보 (목표 20%)</span>
+                    <span id="txtTqqqProg" style="font-weight: 700; color: #be185d;">-</span>
+                </div>
+                <div class="progress-container"><div id="barTqqq" class="progress-bar" style="width: 0%; background: #ec4899;"></div></div>
+                <div id="gapTqqqProg" style="font-size: 11px; font-weight: 700; color: #be185d; text-align: right;">-</div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    let prices = { SPYM: 0, QLD: 0, TQQQ: 0, QQQ: 0, QQQ_high: 0, exchangeRate: 0 };
+    let prices = { QQQM: 0, QLD: 0, TQQQ: 0, QQQ: 0, QQQ_high: 0, exchangeRate: 0 };
 
-    // 🚨 레짐 스위칭을 위한 비율 설정 맵핑 (50% 위기장 추가)
-    // 주식 비중 내 4:4:2 비율 적용
     const REGIME_MAP = {
-        bull: { SPYM: 0.32, QLD: 0.32, TQQQ: 0.16, CASH: 0.20, name: "강세장" },
-        neutral: { SPYM: 0.28, QLD: 0.28, TQQQ: 0.14, CASH: 0.30, name: "평년장" },
-        bear: { SPYM: 0.24, QLD: 0.24, TQQQ: 0.12, CASH: 0.40, name: "하락장" },
-        crisis: { SPYM: 0.20, QLD: 0.20, TQQQ: 0.10, CASH: 0.50, name: "위기장" }
+        bull: { QLD: 0.55, TQQQ: 0.30, CASH: 0.15, name: "강세장" },
+        neutral: { QLD: 0.50, TQQQ: 0.25, CASH: 0.25, name: "평년장" },
+        bear: { QLD: 0.40, TQQQ: 0.20, CASH: 0.40, name: "하락장" },
+        crisis: { QLD: 0.30, TQQQ: 0.15, CASH: 0.55, name: "위기장" }
     };
 
     const proxyPool = [
@@ -270,20 +272,25 @@
         { name: 'Codetabs', buildUrl: (url) => `https://api.codetabs.com/v1/proxy?url=${encodeURIComponent(url)}`, parse: async (res) => res.json() }
     ];
 
+    function safeText(id, text) { const el = document.getElementById(id); if (el) el.innerText = text; }
+    function safeHtml(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
+    function safeClass(id, className) { const el = document.getElementById(id); if (el) el.className = className; }
+    function safeColor(id, color) { const el = document.getElementById(id); if (el) el.style.color = color; }
+
     async function fetchPrices() {
-        document.getElementById('updateTime').innerText = "🔄 실시간 시세 갱신 중...";
+        const timeEl = document.getElementById('updateTime');
+        if (timeEl) timeEl.innerText = "🔄 실시간 시세 갱신 중...";
+
         try {
             const fxResponse = await fetch('https://open.er-api.com/v6/latest/USD');
             if (fxResponse.ok) {
                 const fxData = await fxResponse.json();
                 prices.exchangeRate = fxData.rates.KRW;
-                document.getElementById('exchangeRateDisplay').innerText = `₩${prices.exchangeRate.toFixed(2)}`;
+                safeText('exchangeRateDisplay', `적용환율: ₩${prices.exchangeRate.toFixed(2)}`);
             }
-        } catch (e) {
-            prices.exchangeRate = 1400;
-        }
+        } catch (e) { prices.exchangeRate = 1400; }
 
-        const tickers = ['SPYM', 'QLD', 'TQQQ', 'QQQ'];
+        const tickers = ['QQQM', 'QLD', 'TQQQ', 'QQQ'];
         let hasError = false;
 
         for (let ticker of tickers) {
@@ -303,93 +310,90 @@
                     prices['QQQ_high'] = meta.fiftyTwoWeekHigh || currentPrice;
                 } else {
                     prices[ticker] = currentPrice;
-                    if (document.getElementById(`price${ticker}`)) {
-                        document.getElementById(`price${ticker}`).innerText = `$${prices[ticker].toFixed(2)}`;
-                        document.getElementById(`price${ticker}`).className = "";
-                    }
+                    safeText(`price${ticker}`, `$${prices[ticker].toFixed(2)}`);
+                    safeClass(`price${ticker}`, "");
                 }
             } else { hasError = true; }
         }
-        document.getElementById('updateTime').innerText = hasError ? "⚠️ 일부 시세 지연됨" : `🕒 동기화 완료 (${new Date().toLocaleTimeString()})`;
+        if (timeEl) timeEl.innerText = hasError ? "⚠️ 일부 시세 지연됨" : `🕒 동기화 완료 (${new Date().toLocaleTimeString()})`;
         updateData();
     }
 
     function loadInitialData() {
         const urlParams = new URLSearchParams(window.location.search);
-        ['qtySpym', 'qtyQld', 'qtyTqqq', 'cashWon', 'targetOverallWon', 'regimeSelect'].forEach(id => {
-            const val = urlParams.get(id) || localStorage.getItem(`v3_${id}`);
-            if(val) document.getElementById(id).value = val;
+        ['qtyQqqm', 'qtyQld', 'qtyTqqq', 'cashWon', 'targetOverallWon', 'regimeSelect'].forEach(id => {
+            const val = urlParams.get(id) || localStorage.getItem(`v5_${id}`);
+            const el = document.getElementById(id);
+            if(val && el) el.value = val;
         });
     }
 
-    function saveCurrentData(data) {
-        Object.keys(data).forEach(key => localStorage.setItem(`v3_${key}`, data[key]));
-    }
+    function saveCurrentData(data) { Object.keys(data).forEach(key => localStorage.setItem(`v5_${key}`, data[key])); }
 
     function copySyncUrl() {
         const params = new URLSearchParams();
-        ['qtySpym', 'qtyQld', 'qtyTqqq', 'cashWon', 'targetOverallWon', 'regimeSelect'].forEach(id => {
-            params.set(id, document.getElementById(id).value || '');
+        ['qtyQqqm', 'qtyQld', 'qtyTqqq', 'cashWon', 'targetOverallWon', 'regimeSelect'].forEach(id => {
+            const el = document.getElementById(id);
+            params.set(id, el ? el.value : '');
         });
         const syncUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-        navigator.clipboard.writeText(syncUrl).then(() => alert("🔗 국면 설정이 포함된 동기화 주소가 복사되었습니다!"));
+        navigator.clipboard.writeText(syncUrl).then(() => alert("🔗 격리형 구조 설정이 동기화되었습니다!"));
     }
 
     function updateData() {
-        const qtySpym = parseFloat(document.getElementById('qtySpym').value) || 0;
-        const qtyQld = parseFloat(document.getElementById('qtyQld').value) || 0;
-        const qtyTqqq = parseFloat(document.getElementById('qtyTqqq').value) || 0;
-        const cashWon = parseFloat(document.getElementById('cashWon').value) || 0;
-        const targetOverallWon = parseFloat(document.getElementById('targetOverallWon').value) || 400000000;
-        const currentRegime = document.getElementById('regimeSelect').value;
+        const elQqqm = document.getElementById('qtyQqqm'), elQld = document.getElementById('qtyQld'), elTqqq = document.getElementById('qtyTqqq'), elCash = document.getElementById('cashWon'), elTarget = document.getElementById('targetOverallWon'), elRegime = document.getElementById('regimeSelect');
+
+        const qtyQqqm = elQqqm ? (parseFloat(elQqqm.value) || 0) : 0;
+        const qtyQld = elQld ? (parseFloat(elQld.value) || 0) : 0;
+        const qtyTqqq = elTqqq ? (parseFloat(elTqqq.value) || 0) : 0;
+        const cashWon = elCash ? (parseFloat(elCash.value) || 0) : 0;
+        const targetOverallWon = elTarget ? (parseFloat(elTarget.value) || 500000000) : 500000000;
+        const currentRegime = elRegime ? elRegime.value : 'neutral';
         const targetRatios = REGIME_MAP[currentRegime];
 
-        saveCurrentData({qtySpym, qtyQld, qtyTqqq, cashWon, targetOverallWon, regimeSelect: currentRegime});
+        saveCurrentData({qtyQqqm, qtyQld, qtyTqqq, cashWon, targetOverallWon, regimeSelect: currentRegime});
 
-        document.getElementById('labelCashTarget').innerText = `현재 현금 버퍼 비중 (Target ${targetRatios.CASH * 100}%)`;
-        document.getElementById('labelStockTarget').innerText = `현재 주식 총 비중 (Target ${(1 - targetRatios.CASH) * 100}%)`;
+        safeText('labelCashTarget', `활동 풀 내 현금 비중 (Target ${(targetRatios.CASH * 100).toFixed(1)}%)`);
+        safeText('targetColCash', `${(targetRatios.CASH * 100).toFixed(1)}%`);
 
-        const updateRowLabel = (asset, ratio) => {
-            document.getElementById(`label${asset}`).innerText = `${asset.toUpperCase()} (전체 ${ratio * 100}%)`;
-            document.getElementById(`targetCol${asset}`).innerText = `${ratio * 100}%`;
-            document.getElementById(`calcLabel${asset}`).innerText = `${asset.toUpperCase()} (전체 ${ratio * 100}%)`;
-        };
-        updateRowLabel('Spym', targetRatios.SPYM);
-        updateRowLabel('Qld', targetRatios.QLD);
-        updateRowLabel('Tqqq', targetRatios.TQQQ);
-        document.getElementById('labelCash').innerText = `💵 켈리 현금 버퍼 (${targetRatios.CASH * 100}%)`;
-        document.getElementById('targetColCash').innerText = `${targetRatios.CASH * 100}%`;
+        safeText('targetColQld', `${(targetRatios.QLD * 100).toFixed(1)}%`);
+        safeText('targetColTqqq', `${(targetRatios.TQQQ * 100).toFixed(1)}%`);
 
-        if (prices.SPYM === 0 || prices.QLD === 0 || prices.TQQQ === 0) return;
+        if (prices.QQQM === 0 || prices.QLD === 0 || prices.TQQQ === 0) return;
 
         const currentRate = prices.exchangeRate > 0 ? prices.exchangeRate : 1400;
-        const spymVal = qtySpym * prices.SPYM;
+        const qqqmVal = qtyQqqm * prices.QQQM;
         const qldVal = qtyQld * prices.QLD;
         const tqqqVal = qtyTqqq * prices.TQQQ;
         const cashValUSD = cashWon / currentRate;
-        const overallTotalUSD = spymVal + qldVal + tqqqVal + cashValUSD;
 
-        document.getElementById('curSpym').innerText = '$' + Math.round(spymVal).toLocaleString();
-        document.getElementById('curQld').innerText = '$' + Math.round(qldVal).toLocaleString();
-        document.getElementById('curTqqq').innerText = '$' + Math.round(tqqqVal).toLocaleString();
-        document.getElementById('curCash').innerText = '$' + Math.round(cashValUSD).toLocaleString();
-        document.getElementById('totalAmt').innerText = '$' + Math.round(overallTotalUSD).toLocaleString();
-        document.getElementById('totalWon').innerText = '₩' + Math.round(overallTotalUSD * currentRate).toLocaleString();
+        const overallTotalUSD = qqqmVal + qldVal + tqqqVal + cashValUSD;
+        const activeTotalUSD = qldVal + tqqqVal + cashValUSD;
 
-        if (overallTotalUSD === 0) return;
+        safeText('curQqqm', '$' + Math.round(qqqmVal).toLocaleString());
+        safeText('curQld', '$' + Math.round(qldVal).toLocaleString());
+        safeText('curTqqq', '$' + Math.round(tqqqVal).toLocaleString());
+        safeText('curCash', '$' + Math.round(cashValUSD).toLocaleString());
+        safeText('totalAmt', '$' + Math.round(overallTotalUSD).toLocaleString());
+        safeText('totalWon', '₩' + Math.round(overallTotalUSD * currentRate).toLocaleString());
 
-        const wSpym = spymVal / overallTotalUSD;
-        const wQld = qldVal / overallTotalUSD;
-        const wTqqq = tqqqVal / overallTotalUSD;
-        const wCash = cashValUSD / overallTotalUSD;
-        const wStock = wSpym + wQld + wTqqq;
+        if (overallTotalUSD === 0 || activeTotalUSD === 0) return;
 
-        document.getElementById('weightSpym').innerText = (wSpym * 100).toFixed(1) + '%';
-        document.getElementById('weightQld').innerText = (wQld * 100).toFixed(1) + '%';
-        document.getElementById('weightTqqq').innerText = (wTqqq * 100).toFixed(1) + '%';
-        document.getElementById('weightCash').innerText = (wCash * 100).toFixed(1) + '%';
-        document.getElementById('currentStockWeight').innerText = (wStock * 100).toFixed(1) + '%';
-        document.getElementById('currentCashWeight').innerText = (wCash * 100).toFixed(1) + '%';
+        const wQqqmOverall = qqqmVal / overallTotalUSD;
+        const wQldActive = qldVal / activeTotalUSD;
+        const wTqqqActive = tqqqVal / activeTotalUSD;
+        const wCashActive = cashValUSD / activeTotalUSD;
+
+        safeText('weightQqqm', (wQqqmOverall * 100).toFixed(1) + '% (전체대비)');
+        safeText('weightQld', (wQldActive * 100).toFixed(1) + '% / ' + (qldVal/overallTotalUSD*100).toFixed(1) + '%');
+        safeText('weightTqqq', (wTqqqActive * 100).toFixed(1) + '% / ' + (tqqqVal/overallTotalUSD*100).toFixed(1) + '%');
+        safeText('weightCash', (wCashActive * 100).toFixed(1) + '% / ' + (cashValUSD/overallTotalUSD*100).toFixed(1) + '%');
+
+        safeText('currentCashWeight', (wCashActive * 100).toFixed(1) + '%');
+        safeText('currentQqqmWeight', (wQqqmOverall * 100).toFixed(1) + '%');
+
+        const effectiveLeverage = ((qqqmVal * 1) + (qldVal * 2) + (tqqqVal * 3)) / overallTotalUSD;
+        safeText('effectiveLeverage', effectiveLeverage.toFixed(2));
 
         const evalTarget = (weight, target) => {
             const diff = (weight - target) * 100;
@@ -398,96 +402,125 @@
             return { status: 'OK', val: diff };
         };
 
-        const renderAlert = (id, result) => {
-            const el = document.getElementById(id);
-            if (result.status === 'OVER') { el.innerText = `+${result.val.toFixed(1)}% 초과`; el.style.color = 'var(--danger)'; }
-            else if (result.status === 'UNDER') { el.innerText = `${result.val.toFixed(1)}% 부족`; el.style.color = 'var(--primary)'; }
-            else { el.innerText = '안정권'; el.style.color = 'var(--success)'; }
-        };
+        const resQld = evalTarget(wQldActive, targetRatios.QLD);
+        const resTqqq = evalTarget(wTqqqActive, targetRatios.TQQQ);
+        const resCash = evalTarget(wCashActive, targetRatios.CASH);
 
-        const resSpym = evalTarget(wSpym, targetRatios.SPYM);
-        const resQld = evalTarget(wQld, targetRatios.QLD);
-        const resTqqq = evalTarget(wTqqq, targetRatios.TQQQ);
-        const resCash = evalTarget(wCash, targetRatios.CASH);
-
-        renderAlert('alertSpym', resSpym);
         renderAlert('alertQld', resQld);
         renderAlert('alertTqqq', resTqqq);
         renderAlert('alertCash', resCash);
 
+        function renderAlert(id, result) {
+            if (result.status === 'OVER') { safeText(id, `+${result.val.toFixed(1)}% 초과`); safeColor(id, 'var(--danger)'); }
+            else if (result.status === 'UNDER') { safeText(id, `${result.val.toFixed(1)}% 부족`); safeColor(id, 'var(--primary)'); }
+            else { safeText(id, '안정권'); safeColor(id, 'var(--success)'); }
+        }
+
         const renderAction = (id, currentVal, targetRatio) => {
-            const targetVal = overallTotalUSD * targetRatio;
+            const targetVal = activeTotalUSD * targetRatio;
             const diff = targetVal - currentVal;
-            const el = document.getElementById(id);
-            if (Math.abs((currentVal/overallTotalUSD - targetRatio)*100) > 5) {
-                if (diff > 0) { el.innerText = "▲ $" + Math.round(diff).toLocaleString() + " 매수"; el.className = "guide-text text-buy"; }
-                else { el.innerText = "▼ $" + Math.round(Math.abs(diff)).toLocaleString() + " 매도"; el.className = "guide-text text-sell"; }
-            } else {
-                el.innerText = "HOLD (관망)"; el.className = "guide-text text-hold";
+
+            if (id === 'guideCash') {
+                if (Math.abs((currentVal/activeTotalUSD - targetRatio)*100) > 5) {
+                    if (diff > 0) {
+                        safeText(id, "▲ $" + Math.round(diff).toLocaleString() + " 부족 (엔진 수확 필요)");
+                        safeClass(id, "guide-text text-sell");
+                    } else {
+                        safeText(id, "▼ $" + Math.round(Math.abs(diff)).toLocaleString() + " 여유 ➡️ [하단 엔진(QLD/TQQQ) 매수 실탄으로 분사]");
+                        safeClass(id, "guide-text text-buy");
+                    }
+                } else { safeText(id, "HOLD (관망)"); safeClass(id, "guide-text text-hold"); }
+                return;
             }
+
+            if (Math.abs((currentVal/activeTotalUSD - targetRatio)*100) > 5) {
+                if (diff > 0) {
+                    safeText(id, "▲ $" + Math.round(diff).toLocaleString() + " 매수 (현금 활용)");
+                    safeClass(id, "guide-text text-buy");
+                } else {
+                    const sellAmt = Math.abs(diff);
+                    const toQqqm = sellAmt * 0.6;
+                    const toCash = sellAmt * 0.4;
+                    safeText(id, `▼ $${Math.round(sellAmt).toLocaleString()} 매도 ➡️ [6:4 수확: QQQM $${Math.round(toQqqm).toLocaleString()} / 현금 $${Math.round(toCash).toLocaleString()}]`);
+                    safeClass(id, "guide-text text-sell");
+                }
+            } else { safeText(id, "HOLD (관망)"); safeClass(id, "guide-text text-hold"); }
         };
 
-        renderAction('guideSpym', spymVal, targetRatios.SPYM);
         renderAction('guideQld', qldVal, targetRatios.QLD);
         renderAction('guideTqqq', tqqqVal, targetRatios.TQQQ);
         renderAction('guideCash', cashValUSD, targetRatios.CASH);
 
-        // 🚨 MDD 및 국면 스위칭 권고 로직 (위기장 추가)
         let qqqMdd = 0;
         let mddWarning = "";
         if (prices.QQQ > 0 && prices.QQQ_high > 0) {
             qqqMdd = ((prices.QQQ - prices.QQQ_high) / prices.QQQ_high) * 100;
-            document.getElementById('nasdaqMdd').innerText = qqqMdd.toFixed(2) + '%';
-            document.getElementById('nasdaqPeak').innerText = `(최고가: $${prices.QQQ_high.toFixed(2)})`;
+            safeText('nasdaqMdd', qqqMdd.toFixed(2) + '%');
+            safeText('nasdaqPeak', `(최고가: $${prices.QQQ_high.toFixed(2)})`);
 
             if (qqqMdd < -30 && currentRegime !== 'crisis') {
-                mddWarning = ` 🚨 [시스템 경고] MDD -30% 돌파! 극단적 위기장 모드로 전환하여 현금을 50%로 격상하시길 강력히 권장합니다.`;
+                mddWarning = ` 🚨 [MDD 경고] 고점 대비 -30% 돌파! 시스템을 '위기장' 모드로 변경하여 활동풀의 현금 세팅을 55%로 격상하세요.`;
             } else if (qqqMdd < -20 && qqqMdd >= -30 && currentRegime !== 'bear' && currentRegime !== 'crisis') {
-                mddWarning = ` ⚠️ [국면 전환 권고] MDD가 -20%를 넘었습니다! 방어 모드(하락장)로 전환하여 현금을 40%로 올리시길 권장합니다.`;
+                mddWarning = ` ⚠️ [MDD 조정] 고점 대비 -20% 돌파! 시스템을 '하락장' 모드로 변경하고 현금 에어백을 장전하세요.`;
             } else if (qqqMdd > -5 && currentRegime !== 'bull') {
-                mddWarning = ` 🚀 [국면 전환 권고] 전고점 돌파 임박! 공격 모드(강세장)로 전환하여 수익을 극대화하시길 권장합니다.`;
+                mddWarning = ` 🚀 [신고가 랠리] 전고점 근접! '강세장' 모드로 스위칭하여 주식 엔진 가동률을 최대화하세요.`;
             }
         }
 
         const signalEl = document.getElementById('statusSignal');
-        if (wCash < targetRatios.CASH - 0.05) {
-            signalEl.innerText = `🚨 [탐욕 경고] 현금 버퍼 부족! 현재 국면 목표치(${targetRatios.CASH*100}%)에 맞춰 초과 주식을 매도하세요.` + mddWarning;
-            signalEl.className = "dash-card alert-zone status-danger";
-        } else if (resSpym.status !== 'OK' || resQld.status !== 'OK' || resTqqq.status !== 'OK') {
-            signalEl.innerText = "⚠️ [비중 이탈] 자산이 목표치에서 ±5%를 벗어났습니다. 오더 티켓에 따라 리밸런싱을 진행하세요." + mddWarning;
-            signalEl.className = "dash-card alert-zone status-rebalance";
-        } else {
-            signalEl.innerText = `✅ [${targetRatios.name} 셋업] 시스템 안정 (HOLD) : 국면에 맞춘 밸런스가 완벽하게 유지 중입니다.` + mddWarning;
-            signalEl.className = mddWarning ? "dash-card alert-zone status-rebalance" : "dash-card alert-zone status-hold";
-            if(mddWarning && mddWarning.includes('위기장')) signalEl.style.color = "#b91c1c";
-            else if(mddWarning) signalEl.style.color = "#92400e";
+        let infoBox = '<div class="profit-rule-box">💡 규칙 확인: 엔진 매도 발생 시, 해당 달러 대금의 60%는 QQQM 매수, 40%는 원화 현금 통장에 꼽아 영구 격리합니다.</div>';
+
+        if (signalEl) {
+            if (wCashActive < targetRatios.CASH - 0.05) {
+                signalEl.innerHTML = `🚨 [현금 버퍼 부족] 활동 자산 내 현금이 부족합니다. 과열된 레버리지 엔진(QLD/TQQQ)을 매도하여 6:4 규칙에 따라 현금을 수혈하세요.` + mddWarning + infoBox;
+                signalEl.className = "dash-card alert-zone status-danger";
+            } else if (resQld.status !== 'OK' || resTqqq.status !== 'OK') {
+                signalEl.innerHTML = "⚠️ [엔진 변동성 트리거] 레버리지 엔진 비중이 오차범위(±5%)를 이탈했습니다. 오더 티켓 신호에 따라 대응하세요." + mddWarning + infoBox;
+                signalEl.className = "dash-card alert-zone status-rebalance";
+            } else {
+                signalEl.innerHTML = `✅ [활동풀 ${targetRatios.name} 모드 작동 중] 엔진 방패 간의 밸런스가 매우 안정적입니다.` + mddWarning + infoBox;
+                signalEl.className = mddWarning ? "dash-card alert-zone status-rebalance" : "dash-card alert-zone status-hold";
+                if(mddWarning && mddWarning.includes('🚨')) signalEl.style.color = "#b91c1c";
+                else if(mddWarning) signalEl.style.color = "#92400e";
+            }
         }
 
-        const targetCashWon = targetOverallWon * targetRatios.CASH;
-        document.getElementById('displayTargetCash').innerText = `국면 반영 현금 버퍼 (${targetRatios.CASH * 100}%): ₩${Math.round(targetCashWon).toLocaleString()}`;
+        // 🚨 [하단 개편 핵심]: 초기 분배 계획 공식 고정 연산 [금고 20% : 현금 20% : QLD 40% : TQQQ 20%]
+        const planQqqmWon = targetOverallWon * 0.20;
+        const planCashWon = targetOverallWon * 0.20;
+        const planQldWon = targetOverallWon * 0.40;
+        const planTqqqWon = targetOverallWon * 0.20;
 
-        const targetUsdTotal = targetOverallWon / currentRate;
-        const goalQtySpym = prices.SPYM > 0 ? Math.round((targetUsdTotal * targetRatios.SPYM) / prices.SPYM) : 0;
-        const goalQtyQld = prices.QLD > 0 ? Math.round((targetUsdTotal * targetRatios.QLD) / prices.QLD) : 0;
-        const goalQtyTqqq = prices.TQQQ > 0 ? Math.round((targetUsdTotal * targetRatios.TQQQ) / prices.TQQQ) : 0;
+        const curQqqmWon = qqqmVal * currentRate;
+        const curCashWon = cashWon;
+        const curQldWon = qldVal * currentRate;
+        const curTqqqWon = tqqqVal * currentRate;
 
-        document.getElementById('goalQtySpym').innerText = goalQtySpym.toLocaleString() + ' 주';
-        document.getElementById('goalQtyQld').innerText = goalQtyQld.toLocaleString() + ' 주';
-        document.getElementById('goalQtyTqqq').innerText = goalQtyTqqq.toLocaleString() + ' 주';
+        // 진행률(백분율) 계산
+        const pQqqm = planQqqmWon > 0 ? Math.min(100, (curQqqmWon / planQqqmWon) * 100) : 0;
+        const pCash = planCashWon > 0 ? Math.min(100, (curCashWon / planCashWon) * 100) : 0;
+        const pQld = planQldWon > 0 ? Math.min(100, (curQldWon / planQldWon) * 100) : 0;
+        const pTqqq = planTqqqWon > 0 ? Math.min(100, (curTqqqWon / planTqqqWon) * 100) : 0;
 
-        document.getElementById('currentQtySpym2').innerText = qtySpym.toLocaleString() + ' 주';
-        document.getElementById('currentQtyQld2').innerText = qtyQld.toLocaleString() + ' 주';
-        document.getElementById('currentQtyTqqq2').innerText = qtyTqqq.toLocaleString() + ' 주';
+        // 1. QQQM 금고 프로그레스 렌더링
+        const elBarQqqm = document.getElementById('barQqqm'); if(elBarQqqm) elBarQqqm.style.width = pQqqm + '%';
+        safeText('txtQqqmProg', `₩${Math.round(curQqqmWon).toLocaleString()} / ₩${Math.round(planQqqmWon).toLocaleString()} (${pQqqm.toFixed(1)}%)`);
+        safeText('gapQqqmProg', planQqqmWon > curQqqmWon ? `금고 목표까지 ₩${Math.round(planQqqmWon - curQqqmWon).toLocaleString()} 남음` : '🎯 금고 1차 목표 달성 완료!');
 
-        const renderGap = (idQty, idWon, goal, current, price) => {
-            const gap = Math.max(0, goal - current);
-            document.getElementById(idQty).innerText = gap > 0 ? `+ ${gap.toLocaleString()} 주` : '완료';
-            document.getElementById(idWon).innerText = gap > 0 ? '₩' + Math.round(gap * price * currentRate).toLocaleString() : '-';
-        };
+        // 2. 현금 버퍼 프로그레스 렌더링
+        const elBarCash = document.getElementById('barCash'); if(elBarCash) elBarCash.style.width = pCash + '%';
+        safeText('txtCashProg', `₩${Math.round(curCashWon).toLocaleString()} / ₩${Math.round(planCashWon).toLocaleString()} (${pCash.toFixed(1)}%)`);
+        safeText('gapCashProg', planCashWon > curCashWon ? `예수금 보충까지 ₩${Math.round(planCashWon - curCashWon).toLocaleString()} 남음` : '💵 버퍼 실탄 장전 완료!');
 
-        renderGap('gapQtySpym', 'gapWonSpym', goalQtySpym, qtySpym, prices.SPYM);
-        renderGap('gapQtyQld', 'gapWonQld', goalQtyQld, qtyQld, prices.QLD);
-        renderGap('gapQtyTqqq', 'gapWonTqqq', goalQtyTqqq, qtyTqqq, prices.TQQQ);
+        // 3. QLD 메인 모터 프로그레스 렌더링
+        const elBarQld = document.getElementById('barQld'); if(elBarQld) elBarQld.style.width = pQld + '%';
+        safeText('txtQldProg', `₩${Math.round(curQldWon).toLocaleString()} / ₩${Math.round(planQldWon).toLocaleString()} (${pQld.toFixed(1)}%)`);
+        safeText('gapQldProg', planQldWon > curQldWon ? `엔진 빌드까지 ₩${Math.round(planQldWon - curQldWon).toLocaleString()} 필요` : '🚀 메인 엔진 활성화 완료!');
+
+        // 4. TQQQ 터보 엔진 프로그레스 렌더링
+        const elBarTqqq = document.getElementById('barTqqq'); if(elBarTqqq) elBarTqqq.style.width = pTqqq + '%';
+        safeText('txtTqqqProg', `₩${Math.round(curTqqqWon).toLocaleString()} / ₩${Math.round(planTqqqWon).toLocaleString()} (${pTqqq.toFixed(1)}%)`);
+        safeText('gapTqqqProg', planTqqqWon > curTqqqWon ? `화력 구축까지 ₩${Math.round(planTqqqWon - curTqqqWon).toLocaleString()} 필요` : '🔥 터보 엔진 부스팅 완료!');
     }
 
     window.onload = function() { loadInitialData(); fetchPrices(); };
