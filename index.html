@@ -182,7 +182,14 @@
             <tr style="background-color: #fdfdfd; border-top: 2px solid var(--border);">
                 <td>💵 켈리 현금 버퍼</td>
                 <td>-</td>
-                <td><input type="number" id="cashWon" class="input-qty-large" value="0" min="0" step="1000000" oninput="updateData()"> ₩</td>
+                <td>
+                    <input type="number" id="cashWon" class="input-qty-large" value="0" min="0" step="1000000" oninput="updateData()"> ₩
+                    <!-- 🚨 [신규 추가] 달러 ➡️ 원화 실시간 환산 가젯 영역 -->
+                    <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border); font-size: 11px; color: var(--text-muted); text-align: left;">
+                        🇺🇸 달러 환산기: <input type="number" id="calcUsd" class="input-qty" style="width: 70px; padding: 3px; font-size: 11px; height: auto;" placeholder="$ 금액" oninput="convertUsdToWon()"> $
+                        <div style="margin-top: 4px; font-weight: 700; color: var(--primary);">➡️ ₩ <span id="calcWonOut">0</span> 원</div>
+                    </div>
+                </td>
                 <td id="curCash">$0</td>
                 <td id="targetColCash" style="color: var(--primary); font-weight: 600;">-</td>
                 <td id="weightCash" style="font-weight: 600;">-</td>
@@ -273,6 +280,15 @@
     function safeClass(id, className) { const el = document.getElementById(id); if (el) el.className = className; }
     function safeColor(id, color) { const el = document.getElementById(id); if (el) el.style.color = color; }
 
+    // 🚨 [신규 추가] 달러 ➡️ 원화 변환 실행 랩 함수
+    function convertUsdToWon() {
+        const usdEl = document.getElementById('calcUsd');
+        const usdVal = usdEl ? (parseFloat(usdEl.value) || 0) : 0;
+        const currentRate = prices.exchangeRate > 0 ? prices.exchangeRate : 1400;
+        const wonVal = usdVal * currentRate;
+        safeText('calcWonOut', Math.round(wonVal).toLocaleString());
+    }
+
     async function fetchPrices() {
         const timeEl = document.getElementById('updateTime');
         if (timeEl) timeEl.innerText = "🔄 실시간 시세 갱신 중...";
@@ -322,9 +338,14 @@
             const el = document.getElementById(id);
             if(val && el) el.value = val;
         });
+        const savedUsd = localStorage.getItem('v5_calcUsd');
+        const usdEl = document.getElementById('calcUsd');
+        if(savedUsd && usdEl) usdEl.value = savedUsd;
     }
 
-    function saveCurrentData(data) { Object.keys(data).forEach(key => localStorage.setItem(`v5_${key}`, data[key])); }
+    function saveCurrentData(data) {
+        Object.keys(data).forEach(key => localStorage.setItem(`v5_${key}`, data[key]));
+    }
 
     function copySyncUrl() {
         const params = new URLSearchParams();
@@ -337,7 +358,7 @@
     }
 
     function updateData() {
-        const elQqqm = document.getElementById('qtyQqqm'), elQld = document.getElementById('qtyQld'), elTqqq = document.getElementById('qtyTqqq'), elCash = document.getElementById('cashWon'), elTarget = document.getElementById('targetOverallWon'), elRegime = document.getElementById('regimeSelect');
+        const elQqqm = document.getElementById('qtyQqqm'), elQld = document.getElementById('qtyQld'), elTqqq = document.getElementById('qtyTqqq'), elCash = document.getElementById('cashWon'), elTarget = document.getElementById('targetOverallWon'), elRegime = document.getElementById('regimeSelect'), elCalcUsd = document.getElementById('calcUsd');
 
         const qtyQqqm = elQqqm ? (parseFloat(elQqqm.value) || 0) : 0;
         const qtyQld = elQld ? (parseFloat(elQld.value) || 0) : 0;
@@ -346,8 +367,9 @@
         const targetOverallWon = elTarget ? (parseFloat(elTarget.value) || 500000000) : 500000000;
         const currentRegime = elRegime ? elRegime.value : 'neutral';
         const targetRatios = REGIME_MAP[currentRegime];
+        const calcUsdVal = elCalcUsd ? elCalcUsd.value : '';
 
-        saveCurrentData({qtyQqqm, qtyQld, qtyTqqq, cashWon, targetOverallWon, regimeSelect: currentRegime});
+        saveCurrentData({qtyQqqm, qtyQld, qtyTqqq, cashWon, targetOverallWon, regimeSelect: currentRegime, calcUsd: calcUsdVal});
 
         safeText('labelCashTarget', `활동 풀 내 현금 비중 (Target ${(targetRatios.CASH * 100).toFixed(1)}%)`);
         safeText('targetColCash', `${(targetRatios.CASH * 100).toFixed(1)}%`);
@@ -412,12 +434,10 @@
             else { safeText(id, '안정권'); safeColor(id, 'var(--success)'); }
         }
 
-        // 🚨 실시간 단가 연동형 실전 매매 수량(주) 동적 산출 엔진 개조 부위
         const renderAction = (id, currentVal, targetRatio) => {
             const targetVal = activeTotalUSD * targetRatio;
             const diff = targetVal - currentVal;
 
-            // 실시간 주식 단가 동적 매핑
             let assetPrice = 1;
             if (id === 'guideQld') assetPrice = prices.QLD;
             if (id === 'guideTqqq') assetPrice = prices.TQQQ;
@@ -445,8 +465,6 @@
                     const sellShares = assetPrice > 0 ? Math.round(sellAmt / assetPrice) : 0;
                     const toQqqm = sellAmt * 0.6;
                     const toCash = sellAmt * 0.4;
-
-                    // 60% 분사 대금 기준 QQQM 실시간 목표 매수 수량까지 자동 연산
                     const qqqmShares = prices.QQQM > 0 ? Math.round(toQqqm / prices.QQQM) : 0;
 
                     safeText(id, `▼ $${Math.round(sellAmt).toLocaleString()} 매도 (약 ${sellShares.toLocaleString()}주) ➡️ [6:4 수확: QQQM $${Math.round(toQqqm).toLocaleString()} (약 ${qqqmShares.toLocaleString()}주 매수) / 현금 $${Math.round(toCash).toLocaleString()} 적립]`);
@@ -523,6 +541,9 @@
         const elBarTqqq = document.getElementById('barTqqq'); if(elBarTqqq) elBarTqqq.style.width = pTqqq + '%';
         safeText('txtTqqqProg', `₩${Math.round(curTqqqWon).toLocaleString()} / ₩${Math.round(planTqqqWon).toLocaleString()} (${pTqqq.toFixed(1)}%)`);
         safeText('gapTqqqProg', planTqqqWon > curTqqqWon ? `화력 구축까지 ₩${Math.round(planTqqqWon - curTqqqWon).toLocaleString()} 필요` : '🔥 터보 엔진 부스팅 완료!');
+
+        // 🚨 환산값 상시 동기화 실행
+        convertUsdToWon();
     }
 
     window.onload = function() { loadInitialData(); fetchPrices(); };
