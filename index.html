@@ -108,7 +108,7 @@
         .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
         .card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
 
-        .metric-card { position: relative; min-height: 156px; overflow: hidden; padding: 21px; }
+        .metric-card { position: relative; min-height: 168px; overflow: hidden; padding: 21px; }
         .metric-card::after {
             position: absolute; width: 90px; height: 90px; border-radius: 50%; background: var(--glow, rgb(79 70 229 / 0.06));
             content: ""; filter: blur(4px); pointer-events: none; right: -40px; top: -43px;
@@ -123,9 +123,10 @@
         .metric-sub { margin-top: 7px; color: var(--muted); font-size: 12px; }
         .metric-sub strong { color: #475569; font-weight: 650; }
 
-        .mdd-pair { display: flex; margin-top: 18px; align-items: end; gap: 22px; }
-        .mdd-number { font-size: clamp(21px, 2.2vw, 27px); font-weight: 780; letter-spacing: -0.04em; }
-        .mdd-name { margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 650; }
+        .mdd-pair { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; gap: 8px; align-items: start; }
+        .mdd-number { font-size: clamp(18px, 1.8vw, 22px); font-weight: 780; letter-spacing: -0.03em; }
+        .mdd-name { margin-top: 4px; color: var(--muted); font-size: 11px; font-weight: 650; white-space: nowrap; }
+        .mdd-sub { display: block; margin-top: 3px; color: var(--muted-2); font-size: 10px; font-weight: 500; line-height: 1.25; word-break: keep-all; }
         .negative { color: var(--danger-text); }
         .positive { color: var(--success-text); }
 
@@ -311,12 +312,12 @@
                 <div class="metric-top">
                     <span class="metric-label">나스닥 지수 &amp; MDD 상태</span>
                     <span class="metric-icon" style="background: var(--primary-soft); color: var(--primary)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M3 12h18M3 6h18M3 18h18"></path>
-                        </svg>
-                    </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M3 12h18M3 6h18M3 18h18"></path>
+            </svg>
+        </span>
                 </div>
-                <div class="mdd-pair" style="gap: 14px;">
+                <div class="mdd-pair">
                     <div>
                         <div id="qldMdd" class="mdd-number skeleton">0.0%</div>
                         <div class="mdd-name">QLD MDD</div>
@@ -327,11 +328,11 @@
                     </div>
                     <div>
                         <div id="qqqSmaStatus" class="mdd-number skeleton">상승장</div>
-                        <div class="mdd-name" id="qqqSmaDetail">200일선</div>
+                        <div class="mdd-name">200일선 추세</div>
+                        <span id="qqqSmaDetail" class="mdd-sub">QQQ $0.0 (200일 $0.0)</span>
                     </div>
                 </div>
             </article>
-
             <div id="signalBanner" class="signal-banner success">
                 <div class="signal-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -635,7 +636,7 @@
             dom.qqqSmaStatus.className = `mdd-number ${isQqqBear ? 'negative' : 'positive'}`;
         }
         if (dom.qqqSmaDetail) {
-            dom.qqqSmaDetail.textContent = `QQQ $${qqq.price.toFixed(1)} (200일선 $${qqq.sma200.toFixed(1)})`;
+            dom.qqqSmaDetail.textContent = `QQQ $${qqq.price.toFixed(1)} (200일 $${qqq.sma200.toFixed(1)})`;
         }
         if (dom.qldMdd) {
             dom.qldMdd.textContent = qldMdd.toFixed(1) + "%";
