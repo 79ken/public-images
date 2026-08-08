@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8fafc">
-    <meta name="description" content="QLD 적립식 매수와 MDD 비상 매수 및 익절/추세 관리를 통합 관리하는 대시보드">
-    <title>QLD Master Strategy Dashboard</title>
+    <meta name="description" content="QLD 적립식 매수, MDD 비상 매수 및 스마트 상태 관리 익절 대시보드">
+    <title>QLD Master Strategy Pro Dashboard</title>
     <style>
         :root {
             color-scheme: light;
@@ -97,6 +97,8 @@
 
         .button.primary { border-color: var(--primary); background: var(--primary); color: #fff; box-shadow: 0 5px 14px -7px rgb(79 70 229 / 0.7); }
         .button.primary:hover { border-color: var(--primary-strong); background: var(--primary-strong); color: #fff; }
+        .button.success-btn { border-color: var(--success); background: var(--success); color: #fff; }
+        .button.success-btn:hover { background: #059669; }
         .button[disabled] { cursor: wait; opacity: 0.65; transform: none; }
 
         .page-heading { display: flex; margin-bottom: 22px; align-items: end; justify-content: space-between; gap: 18px; }
@@ -131,7 +133,7 @@
         .positive { color: var(--success-text); }
 
         .signal-banner {
-            display: grid; grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr) auto; margin-top: 2px; align-items: center; gap: 16px;
+            display: grid; grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr) auto auto; margin-top: 2px; align-items: center; gap: 16px;
             padding: 18px 20px; border: 1px solid; border-radius: var(--radius); box-shadow: var(--shadow); transition: background 0.25s, border-color 0.25s;
         }
 
@@ -144,7 +146,7 @@
         .signal-copy { min-width: 0; }
         .signal-copy strong { display: block; font-size: 14px; letter-spacing: -0.015em; }
         .signal-copy span { display: block; margin-top: 4px; font-size: 12px; line-height: 1.45; opacity: 0.8; }
-        .signal-ticket { min-width: 180px; text-align: right; }
+        .signal-ticket { min-width: 160px; text-align: right; }
         .signal-ticket strong { display: block; font-size: 19px; letter-spacing: -0.03em; }
         .signal-ticket span { display: block; margin-top: 4px; font-size: 11px; font-weight: 650; opacity: 0.75; }
 
@@ -210,7 +212,7 @@
         @keyframes shimmer { to { background-position: -200% 0; } }
 
         @media (max-width: 1050px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dashboard-grid { grid-template-columns: 1fr; } }
-        @media (max-width: 700px) { .shell { padding: 0 16px 32px; } .topbar { margin: 0 -16px 24px; padding: 13px 16px; } .metrics, .controls { grid-template-columns: 1fr; } }
+        @media (max-width: 700px) { .shell { padding: 0 16px 32px; } .topbar { margin: 0 -16px 24px; padding: 13px 16px; } .metrics, .controls { grid-template-columns: 1fr; } .signal-banner { grid-template-columns: 1fr; text-align: center; } .signal-ticket { text-align: center; } }
     </style>
 </head>
 <body>
@@ -225,8 +227,8 @@
                     </svg>
                 </div>
                 <div class="brand-copy">
-                    <h1>QLD Strategy Pro</h1>
-                    <p>DCA · MDD Buffer · Trend Guardrail</p>
+                    <h1>QLD Master Strategy Pro</h1>
+                    <p>DCA · MDD Buffer · Smart Take-Profit</p>
                 </div>
             </div>
 
@@ -260,8 +262,8 @@
         <div class="page-heading">
             <div>
                 <p class="eyebrow">Portfolio Command Center Pro</p>
-                <h2>완전체 양방향 리밸런싱 시스템</h2>
-                <p class="description">추세(200SMA) 감지, 목표 비중 익절, MDD 분할 매수를 통합하여 시장 과열 및 폭락에 기계적으로 대응합니다.</p>
+                <h2>스마트 상태 관리 양방향 시스템</h2>
+                <p class="description">실제 매도 실행 후 버튼을 눌러 상태를 완결 처리하면 신호가 소멸하고 다음 목표 단계로 자동 전환됩니다.</p>
             </div>
             <span id="updatedAt" class="updated-at">시세 불러오는 중...</span>
         </div>
@@ -312,10 +314,10 @@
                 <div class="metric-top">
                     <span class="metric-label">나스닥 지수 &amp; MDD 상태</span>
                     <span class="metric-icon" style="background: var(--primary-soft); color: var(--primary)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M3 12h18M3 6h18M3 18h18"></path>
-            </svg>
-        </span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M3 12h18M3 6h18M3 18h18"></path>
+                        </svg>
+                    </span>
                 </div>
                 <div class="mdd-pair">
                     <div>
@@ -333,6 +335,7 @@
                     </div>
                 </div>
             </article>
+
             <div id="signalBanner" class="signal-banner success">
                 <div class="signal-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -341,11 +344,14 @@
                 </div>
                 <div class="signal-copy">
                     <strong id="signalTitle">정기 적립식 매수 구간</strong>
-                    <span id="signalDescription">현재 MDD 비상 매수 조건에 해당하지 않습니다.</span>
+                    <span id="signalDescription">현재 MDD 비상 매수 및 과열 익절 조건에 해당하지 않습니다.</span>
                 </div>
                 <div class="signal-ticket">
                     <strong id="signalAmount">₩10,000,000</strong>
                     <span id="signalShares">QLD 계산 중</span>
+                </div>
+                <div id="signalActionBox" style="display: none;">
+                    <button id="btnCompleteAction" class="button success-btn" type="button">익절 실행 완료</button>
                 </div>
             </div>
         </section>
@@ -355,7 +361,7 @@
                 <div class="section-header">
                     <div>
                         <h3 class="section-title">동적 양방향 오더 티켓</h3>
-                        <p class="section-note">매수 / 매도(익절) / 200일선 방어 조건 자동 산출</p>
+                        <p class="section-note">매수 / 객관적 과열 익절 / 200일선 방어 조건 자동 산출</p>
                     </div>
                     <span id="marketStatus" class="status-pill">실시간 데이터</span>
                 </div>
@@ -491,14 +497,16 @@
 <script>
     "use strict";
 
-    const STORAGE_PREFIX = "v9_";
-    const STATE_KEYS = ["qtyQld", "avgPriceQld", "cashWon", "monthlyDcaWon", "dcaMonth"];
+    const STORAGE_PREFIX = "v11_";
+    const STATE_KEYS = ["qtyQld", "avgPriceQld", "cashWon", "monthlyDcaWon", "dcaMonth", "disparitySold", "milestoneLevel"];
     const DEFAULT_STATE = {
         qtyQld: 1000,
         avgPriceQld: 80.0,
         cashWon: 300000000,
         monthlyDcaWon: 10000000,
-        dcaMonth: 1
+        dcaMonth: 1,
+        disparitySold: 0,   // 135% 이격도 익절 완결 여부 (0: 미완결, 1: 완결)
+        milestoneLevel: 100 // 현재 달성 목표 수익률 단계 (% 단위, 100 -> 150 -> 200...)
     };
 
     const FALLBACK_MARKET = {
@@ -528,7 +536,7 @@
             "qtyQld", "avgPriceQld", "cashWon", "monthlyDcaWon", "dcaMonth", "headerRate", "liveDot",
             "totalAssets", "qldValueKrw", "qldReturnPct", "qldWeight", "cashValueKrw",
             "cashValueUsd", "qqqSmaStatus", "qqqSmaDetail", "qldMdd", "qqqMdd", "signalBanner", "signalTitle",
-            "signalDescription", "signalAmount", "signalShares", "orderTableBody",
+            "signalDescription", "signalAmount", "signalShares", "signalActionBox", "btnCompleteAction", "orderTableBody",
             "marketStatus", "highSummary", "monthBadge", "dcaProgressValue",
             "dcaProgressBar", "dcaElapsed", "dcaRemaining", "mddBufferValue",
             "mddBufferBar", "mddBufferRatio", "reserveCashValue", "reserveCashBar",
@@ -555,7 +563,9 @@
     }
 
     function syncInputsFromState() {
-        STATE_KEYS.forEach(key => { if (dom[key]) dom[key].value = String(app.state[key]); });
+        ["qtyQld", "avgPriceQld", "cashWon", "monthlyDcaWon", "dcaMonth"].forEach(key => {
+            if (dom[key]) dom[key].value = String(app.state[key]);
+        });
     }
 
     function saveState() {
@@ -602,7 +612,7 @@
     }
 
     function render() {
-        const { qtyQld, avgPriceQld, cashWon, monthlyDcaWon, dcaMonth } = app.state;
+        const { qtyQld, avgPriceQld, cashWon, monthlyDcaWon, dcaMonth, disparitySold, milestoneLevel } = app.state;
         const { exchangeRate, qld, qqq } = app.market;
 
         const qldValueUsd = qtyQld * qld.price;
@@ -613,7 +623,16 @@
         const qldReturnPct = avgPriceQld > 0 ? ((qld.price - avgPriceQld) / avgPriceQld) * 100 : 0;
         const qldMdd = calculateMdd(qld);
         const qqqMdd = calculateMdd(qqq);
-        // 200SMA 추세 감지
+
+        // 200일선 이격도(Disparity Index) 계산 (%)
+        const qldDisparity = qld.sma200 > 0 ? (qld.price / qld.sma200) * 100 : 100;
+
+        // 히스테리시스 자동 리셋: 주가가 식어서 이격도가 120% 미만으로 떨어지면 익절 완료 플래그 자동 해제
+        if (qldDisparity < 120 && disparitySold === 1) {
+            app.state.disparitySold = 0;
+            saveState();
+        }
+
         const isQqqBear = qqq.price < qqq.sma200;
 
         if (dom.headerRate) dom.headerRate.textContent = exchangeRate.toFixed(1);
@@ -631,13 +650,6 @@
 
         [dom.totalAssets, dom.qldValueKrw].forEach(el => el && el.classList.remove("skeleton"));
 
-        if (dom.qqqSmaStatus) {
-            dom.qqqSmaStatus.textContent = isQqqBear ? "하락장" : "상승장";
-            dom.qqqSmaStatus.className = `mdd-number ${isQqqBear ? 'negative' : 'positive'}`;
-        }
-        if (dom.qqqSmaDetail) {
-            dom.qqqSmaDetail.textContent = `QQQ $${qqq.price.toFixed(1)} (200일 $${qqq.sma200.toFixed(1)})`;
-        }
         if (dom.qldMdd) {
             dom.qldMdd.textContent = qldMdd.toFixed(1) + "%";
             dom.qldMdd.className = `mdd-number ${qldMdd < 0 ? 'negative' : 'positive'}`;
@@ -646,63 +658,105 @@
             dom.qqqMdd.textContent = qqqMdd.toFixed(1) + "%";
             dom.qqqMdd.className = `mdd-number ${qqqMdd < 0 ? 'negative' : 'positive'}`;
         }
-        // 동적 매수 TIER 생성
+
+        if (dom.qqqSmaStatus) {
+            dom.qqqSmaStatus.textContent = isQqqBear ? "하락장" : "상승장";
+            dom.qqqSmaStatus.className = `mdd-number ${isQqqBear ? 'negative' : 'positive'}`;
+        }
+        if (dom.qqqSmaDetail) {
+            dom.qqqSmaDetail.textContent = `QQQ $${qqq.price.toFixed(1)} (200일 $${qqq.sma200.toFixed(1)})`;
+        }
+
         const dynamicMDD = MDD_TIERS.map(t => ({
             ...t,
             amount: Math.round(cashWon * t.pct),
             condition: `QLD MDD ≤ ${t.threshold}% (${t.pct * 100}%)`
         }));
 
-        // 비중 초과 익절(매도) 금액 계산 (비중이 60%를 넘으면 50% 수준으로 부분 익절)
-        const targetQldVal = totalAssets * 0.50;
-        const rebalSellAmtWon = qldWeightPct > 60 ? Math.round(qldValueKrw - targetQldVal) : 0;
-        const rebalSellShares = sharesFor(rebalSellAmtWon);
+        const overboughtSellAmt = (qldDisparity >= 135 && disparitySold === 0) ? Math.round(qldValueKrw * 0.15) : 0;
+        const milestoneSellAmt = Math.round((qtyQld * avgPriceQld * exchangeRate) * 0.20);
 
-        // 신호 및 주문 티켓 결정 로직
         let active = { id: "dca", label: "정기 적립식 매수", amount: monthlyDcaWon, tone: "success", type: "BUY" };
+        let showActionButton = false;
+        let actionCallback = null;
+        let actionBtnText = "";
 
         if (isQqqBear) {
-            // 1. 200일선 하회 시 매수 일시 중단 가드레일
             active = {
                 id: "guardrail",
-                label: "🚨 200일선 이탈 (대세 하감장)",
-                description: "나스닥100 지수가 200일선 아래에 있습니다. 추가 매수를 일시 중단하고 현금을 보유하세요.",
+                label: "🚨 200일선 이탈 (대세 하강장)",
+                description: "나스닥100 지수가 200일선 아래에 있습니다. 추가 매수를 일시 중단하고 현금을 보존하세요.",
                 amount: 0,
                 tone: "danger",
                 type: "HOLD"
             };
-        } else if (qldWeightPct > 60) {
-            // 2. QLD 비중 과열 시 부분 익절 신호
+        } else if (qldDisparity >= 135 && disparitySold === 0) {
             active = {
-                id: "sell_overweight",
-                label: "📈 비중 과열 부분 익절 신호",
-                description: `QLD 비중이 ${qldWeightPct.toFixed(1)}%(60% 초과)에 도달했습니다. 일부를 매도하여 현금을 확보하세요.`,
-                amount: rebalSellAmtWon,
+                id: "sell_disparity",
+                label: "📈 200일선 이격도 과열 익절 (+135%)",
+                description: `QLD 가격이 200일선 대비 ${qldDisparity.toFixed(1)}%로 과열 구간입니다. 물량 15% 차익 실현 후 버튼을 누르세요.`,
+                amount: overboughtSellAmt,
                 tone: "warning",
                 type: "SELL"
+            };
+            showActionButton = true;
+            actionBtnText = "135% 과열 익절 완결";
+            actionCallback = () => {
+                app.state.disparitySold = 1;
+                saveState();
+                showToast("135% 이격도 익절이 완결 처리되었습니다.");
+                render();
+            };
+        } else if (qldReturnPct >= milestoneLevel) {
+            active = {
+                id: "sell_milestone",
+                label: `🎯 수익률 +${milestoneLevel}% 마일스톤 달성`,
+                description: `목표 수익률 +${milestoneLevel}%를 달성했습니다. 일부 익절 후 버튼을 누르면 다음 목표(+50%p)로 이동합니다.`,
+                amount: milestoneSellAmt,
+                tone: "warning",
+                type: "SELL"
+            };
+            showActionButton = true;
+            actionBtnText = `+${milestoneLevel}% 익절 완료 (다음 목표로)`;
+            actionCallback = () => {
+                app.state.milestoneLevel += 50;
+                saveState();
+                showToast(`마일스톤 완결! 다음 목표: +${app.state.milestoneLevel}%`);
+                render();
             };
         } else if (qldMdd <= -45) active = dynamicMDD[2];
         else if (qldMdd <= -30) active = dynamicMDD[1];
         else if (qldMdd <= -15) active = dynamicMDD[0];
 
-        // 시그널 배너 업데이트
+        // 배너 UI 바인딩
         if (dom.signalBanner) dom.signalBanner.className = `signal-banner ${active.tone}`;
         if (dom.signalTitle) dom.signalTitle.textContent = active.label;
         if (dom.signalDescription) {
-            dom.signalDescription.textContent = active.description || (active.id === "dca" ? "현재 MDD 비상 매수 및 익절 조건에 해당하지 않습니다." : `QLD 낙폭 ${qldMdd.toFixed(1)}% 진입`);
+            dom.signalDescription.textContent = active.description || (active.id === "dca" ? "현재 MDD 비상 매수 및 과열 익절 조건에 해당하지 않습니다." : `QLD 낙폭 ${qldMdd.toFixed(1)}% 진입`);
         }
         if (dom.signalAmount) dom.signalAmount.textContent = active.type === "HOLD" ? "매수 중단" : krw(active.amount);
         if (dom.signalShares) {
             if (active.type === "HOLD") dom.signalShares.textContent = "현금 방어 태세";
-            else if (active.type === "SELL") dom.signalShares.textContent = `QLD 약 ${rebalSellShares.toLocaleString()}주 매도`;
+            else if (active.type === "SELL") dom.signalShares.textContent = `QLD 약 ${sharesFor(active.amount).toLocaleString()}주 매도`;
             else dom.signalShares.textContent = `QLD 약 ${sharesFor(active.amount).toLocaleString()}주 매수`;
         }
 
-        // 양방향 오더 테이블 구성
+        // 실행 완료 버튼 동적 바인딩
+        if (dom.signalActionBox && dom.btnCompleteAction) {
+            if (showActionButton && actionCallback) {
+                dom.signalActionBox.style.display = "block";
+                dom.btnCompleteAction.textContent = actionBtnText;
+                dom.btnCompleteAction.onclick = actionCallback;
+            } else {
+                dom.signalActionBox.style.display = "none";
+            }
+        }
+
         const rows = [
             { id: "dca", label: "월 정기 매수", condition: `${dcaMonth}개월차 정기 집행`, amount: monthlyDcaWon, type: "BUY" },
             ...dynamicMDD,
-            { id: "sell_overweight", label: "비중 초과 부분 익절", condition: "QLD 비중 > 60% 달성 시", amount: rebalSellAmtWon, type: "SELL" },
+            { id: "sell_disparity", label: "200일선 이격도 과열 익절", condition: `이격도 ${qldDisparity.toFixed(1)}% (기준 ≥ 135%) · ${disparitySold === 1 ? '완결' : '미완결'}`, amount: disparitySold === 1 ? 0 : overboughtSellAmt, type: "SELL" },
+            { id: "sell_milestone", label: `마일스톤 익절 (목표 +${milestoneLevel}%)`, condition: `현재 수익률 ${qldReturnPct.toFixed(1)}% (목표 +${milestoneLevel}%)`, amount: qldReturnPct >= milestoneLevel ? milestoneSellAmt : 0, type: "SELL" },
             { id: "200sma_defense", label: "200일선 방어 리밸런싱", condition: "QQQ가 200일선 하회 시", amount: isQqqBear ? Math.round(qldValueKrw * 0.2) : 0, type: "SELL_DEFENSE" }
         ];
 
@@ -718,7 +772,7 @@
                     if (isActive) { actionText = "매수 실행"; pillTone = "success"; }
                 } else if (r.type === "SELL" || r.type === "SELL_DEFENSE") {
                     resultCash = cashWon + r.amount;
-                    if (isActive) { actionText = "매도 실행"; pillTone = "warning"; }
+                    if (isActive) { actionText = r.amount > 0 ? "매도 실행" : "완결 처리됨"; pillTone = r.amount > 0 ? "warning" : "neutral"; }
                 }
 
                 const displayShares = sharesFor(r.amount);
@@ -729,7 +783,7 @@
                             <span class="strategy-name">${r.label}</span>
                             <span class="strategy-condition">${r.condition}</span>
                         </td>
-                        <td style="color: ${r.type.startsWith('SELL') ? 'var(--danger-text)' : 'var(--text)'}">
+                        <td style="color: ${r.type.startsWith('SELL') && r.amount > 0 ? 'var(--danger-text)' : 'var(--text)'}">
                             ${r.type.startsWith('SELL') && r.amount > 0 ? '-' : ''}${krw(r.amount)}
                         </td>
                         <td><strong>${r.type.startsWith('SELL') && r.amount > 0 ? '매도 ' : ''}${displayShares.toLocaleString()}주</strong></td>
@@ -740,7 +794,6 @@
             }).join('');
         }
 
-        // 로드맵 연동 계산
         const totalDcaTarget = monthlyDcaWon * 12;
         const currentDcaDone = monthlyDcaWon * dcaMonth;
         const mddTierTotal = dynamicMDD.reduce((sum, t) => sum + t.amount, 0);
@@ -811,7 +864,6 @@
                 const price = meta.regularMarketPrice || meta.chartPreviousClose;
                 const high52 = meta.fiftyTwoWeekHigh || price;
 
-                // 200일 이동평균선(200SMA) 계산
                 const closes = (result.indicators?.quote?.[0]?.close || []).filter(Number.isFinite);
                 let sma200 = price;
                 if (closes.length >= 50) {
@@ -869,7 +921,7 @@
     function init() {
         cacheDom();
         loadState();
-        STATE_KEYS.forEach(key => dom[key] && dom[key].addEventListener("input", readInputs));
+        ["qtyQld", "avgPriceQld", "cashWon", "monthlyDcaWon", "dcaMonth"].forEach(key => dom[key] && dom[key].addEventListener("input", readInputs));
         render();
         refreshMarketData();
     }
