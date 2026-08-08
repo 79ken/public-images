@@ -478,7 +478,7 @@
                         </div>
                         <div class="progress"><div id="mddBufferBar" class="progress-fill amber"></div></div>
                         <div class="roadmap-caption">
-                            <span>-15%(10%) · -30%(15%) · -45%(20%)</span>
+                            <span>-10%(10%) · -15%(15%) · -20%(20%) · -25%(25%) · -30%(30%)</span>
                             <span id="mddBufferRatio">비상 버퍼의 0%</span>
                         </div>
                     </div>
@@ -541,9 +541,11 @@
     };
 
     const MDD_TIERS = [
-        { id: "mdd15", label: "MDD 1차 매수", threshold: -15, pct: 0.10, tone: "warning", type: "BUY" },
-        { id: "mdd30", label: "MDD 2차 매수", threshold: -30, pct: 0.15, tone: "warning", type: "BUY" },
-        { id: "mdd45", label: "MDD 3차 매수", threshold: -45, pct: 0.20, tone: "danger", type: "BUY" }
+        { id: "mdd10", label: "지수 조정 (1차 매수)", threshold: -10, pct: 0.10, tone: "warning", type: "BUY" },
+        { id: "mdd15", label: "지수 폭락 (2차 매수)", threshold: -15, pct: 0.15, tone: "warning", type: "BUY" },
+        { id: "mdd20", label: "지수 위기 (3차 매수)", threshold: -20, pct: 0.20, tone: "danger", type: "BUY" },
+        { id: "mdd25", label: "지수 위기 (4차 매수)", threshold: -25, pct: 0.25, tone: "danger", type: "BUY" },
+        { id: "mdd30", label: "지수 위기 (5차 매수)", threshold: -30, pct: 0.30, tone: "danger", type: "BUY" }
     ];
 
     const app = {
@@ -857,7 +859,7 @@
         const dynamicMDD = MDD_TIERS.map(t => ({
             ...t,
             amount: Math.round(cashWon * t.pct),
-            condition: `QLD MDD ≤ ${t.threshold}% (${t.pct * 100}%)`
+            condition: `QQQ MDD ≤ ${t.threshold}% (${t.pct * 100}%)`
         }));
 
         // 버그 수정: 이격도 135% 이상 및 미완결 상태일 때만 익절 금액 계산
@@ -912,9 +914,11 @@
                 showToast(`마일스톤 완결! 다음 목표: +${app.state.milestoneLevel}%`);
                 render();
             };
-        } else if (qldMdd <= -45) active = dynamicMDD[2];
-        else if (qldMdd <= -30) active = dynamicMDD[1];
-        else if (qldMdd <= -15) active = dynamicMDD[0];
+        } else if (qqqMdd <= -30) active = dynamicMDD[4]; // QQQ -30%
+        else if (qqqMdd <= -25) active = dynamicMDD[3]; // QQQ -25%
+        else if (qqqMdd <= -20) active = dynamicMDD[2]; // QQQ -20%
+        else if (qqqMdd <= -15) active = dynamicMDD[1]; // QQQ -15%
+        else if (qqqMdd <= -10) active = dynamicMDD[0]; // QQQ -10%
 
         if (dom.signalBanner) dom.signalBanner.className = `signal-banner ${active.tone}`;
         if (dom.signalTitle) dom.signalTitle.textContent = active.label;
@@ -986,6 +990,10 @@
         const reserveCash = Math.max(0, cashWon - mddTierTotal);
         const coveragePct = totalDcaTarget > 0 ? (cashWon / totalDcaTarget) * 100 : 0;
 
+        const mddPctSum = MDD_TIERS.reduce((sum, t) => sum + t.pct, 0); // 티어 합계 (예: 1.0 = 100%)
+        const mddPctDisplay = Math.round(mddPctSum * 100);
+        const reservePctDisplay = Math.max(0, 100 - mddPctDisplay);
+
         if (dom.monthBadge) dom.monthBadge.textContent = `${dcaMonth} / 12개월`;
         if (dom.dcaProgressValue) dom.dcaProgressValue.textContent = `${compactKrw(currentDcaDone)} / ${compactKrw(totalDcaTarget)}`;
         if (dom.dcaProgressBar) dom.dcaProgressBar.style.width = `${Math.min(100, (dcaMonth / 12) * 100)}%`;
@@ -993,12 +1001,12 @@
         if (dom.dcaRemaining) dom.dcaRemaining.textContent = `${Math.max(0, 12 - dcaMonth)}회 남음`;
 
         if (dom.mddBufferValue) dom.mddBufferValue.textContent = compactKrw(mddTierTotal);
-        if (dom.mddBufferBar) dom.mddBufferBar.style.width = `45%`;
-        if (dom.mddBufferRatio) dom.mddBufferRatio.textContent = `가용 현금의 45%`;
+        if (dom.mddBufferBar) dom.mddBufferBar.style.width = `${mddPctDisplay}%`;
+        if (dom.mddBufferRatio) dom.mddBufferRatio.textContent = `가용 현금의 ${mddPctDisplay}%`;
 
         if (dom.reserveCashValue) dom.reserveCashValue.textContent = compactKrw(reserveCash);
-        if (dom.reserveCashBar) dom.reserveCashBar.style.width = `55%`;
-        if (dom.reserveCashRatio) dom.reserveCashRatio.textContent = `가용 현금의 55%`;
+        if (dom.reserveCashBar) dom.reserveCashBar.style.width = `${reservePctDisplay}%`;
+        if (dom.reserveCashRatio) dom.reserveCashRatio.textContent = `가용 현금의 ${reservePctDisplay}%`;
 
         if (dom.plannedDca) dom.plannedDca.textContent = compactKrw(totalDcaTarget);
         if (dom.plannedMddBuffer) dom.plannedMddBuffer.textContent = compactKrw(mddTierTotal);
@@ -1020,7 +1028,7 @@
             const isAllLive = app.sources.exchange && app.sources.qld && app.sources.qqq;
             if (isAllLive) {
                 dom.marketStatus.textContent = "실시간 데이터";
-                dom.marketStatus.className = "status-pill pill success";
+                dom.marketStatus.className = "status-pill pill";
             } else {
                 dom.marketStatus.textContent = "대체 데이터 사용 중";
                 dom.marketStatus.className = "status-pill pill warning";
