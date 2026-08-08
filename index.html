@@ -4,8 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8fafc">
-    <meta name="description" content="QLD 적립식 매수, MDD 비상 매수 및 스마트 상태 관리 익절 대시보드">
+    <meta name="description" content="QLD 적립식 매수, MDD 비상 매수, 자산 추이 차트 및 스마트 익절 대시보드">
     <title>QLD Master Strategy Pro Dashboard</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             color-scheme: light;
@@ -99,6 +101,8 @@
         .button.primary:hover { border-color: var(--primary-strong); background: var(--primary-strong); color: #fff; }
         .button.success-btn { border-color: var(--success); background: var(--success); color: #fff; }
         .button.success-btn:hover { background: #059669; }
+        .button.ghost { border-color: transparent; background: transparent; color: var(--muted); box-shadow: none; }
+        .button.ghost:hover { background: var(--primary-soft); color: var(--primary); }
         .button[disabled] { cursor: wait; opacity: 0.65; transform: none; }
 
         .page-heading { display: flex; margin-bottom: 22px; align-items: end; justify-content: space-between; gap: 18px; }
@@ -149,6 +153,10 @@
         .signal-ticket { min-width: 160px; text-align: right; }
         .signal-ticket strong { display: block; font-size: 19px; letter-spacing: -0.03em; }
         .signal-ticket span { display: block; margin-top: 4px; font-size: 11px; font-weight: 650; opacity: 0.75; }
+
+        /* Chart Section Styling */
+        .chart-section { margin-top: 22px; padding: 22px; }
+        .chart-container { position: relative; width: 100%; height: 320px; margin-top: 16px; }
 
         .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.85fr); margin-top: 22px; align-items: start; gap: 22px; }
         .section-card { overflow: hidden; }
@@ -228,7 +236,7 @@
                 </div>
                 <div class="brand-copy">
                     <h1>QLD Master Strategy Pro</h1>
-                    <p>DCA · MDD Buffer · Smart Take-Profit</p>
+                    <p>DCA · MDD Buffer · Asset Visualizer</p>
                 </div>
             </div>
 
@@ -262,8 +270,8 @@
         <div class="page-heading">
             <div>
                 <p class="eyebrow">Portfolio Command Center Pro</p>
-                <h2>스마트 상태 관리 양방향 시스템</h2>
-                <p class="description">실제 매도 실행 후 버튼을 눌러 상태를 완결 처리하면 신호가 소멸하고 다음 목표 단계로 자동 전환됩니다.</p>
+                <h2>자산 시각화 &amp; 양방향 리밸런싱 시스템</h2>
+                <p class="description">실시간 시세와 입력한 포트폴리오 데이터를 바탕으로 총자산 추이를 차트로 시각화하고 기계적인 오더를 산출합니다.</p>
             </div>
             <span id="updatedAt" class="updated-at">시세 불러오는 중...</span>
         </div>
@@ -353,6 +361,23 @@
                 <div id="signalActionBox" style="display: none;">
                     <button id="btnCompleteAction" class="button success-btn" type="button">익절 실행 완료</button>
                 </div>
+            </div>
+        </section>
+
+        <!-- 총 자산 추이 시각화 차트 섹션 -->
+        <section class="card section-card chart-section">
+            <div class="section-header" style="padding: 0 0 14px 0; border-bottom: 1px solid var(--border);">
+                <div>
+                    <h3 class="section-title">📈 총 자산 및 포트폴리오 추이 시각화</h3>
+                    <p class="section-note">접속 시 시점별 스냅샷이 기록되며, 총자산, QLD 평가액, 가용 현금의 변화를 시각적으로 추적합니다.</p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                   <!-- <button class="button ghost" type="button" onclick="populateSampleHistory()">샘플 추이 데이터 보기</button>-->
+                    <button class="button ghost" type="button" onclick="clearHistory()">기록 초기화</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="assetTrendChart"></canvas>
             </div>
         </section>
 
@@ -497,7 +522,7 @@
 <script>
     "use strict";
 
-    const STORAGE_PREFIX = "v11_";
+    const STORAGE_PREFIX = "v12_";
     const STATE_KEYS = ["qtyQld", "avgPriceQld", "cashWon", "monthlyDcaWon", "dcaMonth", "disparitySold", "milestoneLevel"];
     const DEFAULT_STATE = {
         qtyQld: 1000,
@@ -505,8 +530,8 @@
         cashWon: 300000000,
         monthlyDcaWon: 10000000,
         dcaMonth: 1,
-        disparitySold: 0,   // 135% 이격도 익절 완결 여부 (0: 미완결, 1: 완결)
-        milestoneLevel: 100 // 현재 달성 목표 수익률 단계 (% 단위, 100 -> 150 -> 200...)
+        disparitySold: 0,
+        milestoneLevel: 100
     };
 
     const FALLBACK_MARKET = {
@@ -525,7 +550,8 @@
         state: { ...DEFAULT_STATE },
         market: { ...FALLBACK_MARKET },
         sources: { exchange: false, qld: false, qqq: false },
-        toastTimer: null
+        toastTimer: null,
+        chart: null
     };
 
     const dom = {};
@@ -541,7 +567,7 @@
             "dcaProgressBar", "dcaElapsed", "dcaRemaining", "mddBufferValue",
             "mddBufferBar", "mddBufferRatio", "reserveCashValue", "reserveCashBar",
             "reserveCashRatio", "plannedDca", "plannedMddBuffer", "cashCoverage",
-            "updatedAt", "refreshButton", "toast"
+            "updatedAt", "refreshButton", "toast", "assetTrendChart"
         ].forEach(id => dom[id] = $(id));
     }
 
@@ -611,6 +637,168 @@
         return Math.max(0, Math.round((amount / rate) / price));
     }
 
+    /* 자산 추이 스냅샷 저장 및 차트 관리 */
+    function getHistorySnapshots() {
+        try {
+            const raw = localStorage.getItem(STORAGE_PREFIX + "historySnapshots");
+            return raw ? JSON.parse(raw) : [];
+        } catch(e) { return []; }
+    }
+
+    function saveHistorySnapshots(snapshots) {
+        try {
+            localStorage.setItem(STORAGE_PREFIX + "historySnapshots", JSON.stringify(snapshots));
+        } catch(e) {}
+    }
+
+    function recordSnapshot(totalAssets, qldValueKrw, cashWon) {
+        if (!totalAssets || totalAssets <= 0) return;
+        const todayStr = new Date().toISOString().split("T")[0];
+        let history = getHistorySnapshots();
+
+        const existingIndex = history.findIndex(s => s.date === todayStr);
+        const snapshotObj = {
+            date: todayStr,
+            total: Math.round(totalAssets),
+            qld: Math.round(qldValueKrw),
+            cash: Math.round(cashWon)
+        };
+
+        if (existingIndex >= 0) {
+            history[existingIndex] = snapshotObj;
+        } else {
+            history.push(snapshotObj);
+        }
+
+        // 최근 60개 스냅샷 유지
+        if (history.length > 60) history = history.slice(-60);
+        saveHistorySnapshots(history);
+        updateChart(history);
+    }
+
+    function populateSampleHistory() {
+        const today = new Date();
+        const history = [];
+        const baseCash = app.state.cashWon;
+        const baseQty = app.state.qtyQld;
+        const currentPrice = app.market.qld.price;
+        const rate = app.market.exchangeRate;
+
+        // 6개월간의 가상 시뮬레이션 추이 생성
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const dateStr = d.toISOString().split("T")[0].substring(0, 7);
+
+            // 약간의 변동성 시뮬레이션
+            const factor = 1 + (i === 5 ? -0.15 : i === 4 ? -0.08 : i === 3 ? 0.02 : i === 2 ? 0.08 : i === 1 ? 0.05 : 0.12);
+            const simQldPrice = currentPrice * factor;
+            const simQldValue = Math.round(baseQty * simQldPrice * rate);
+            const simCash = baseCash - ((5 - i) * app.state.monthlyDcaWon);
+            const simTotal = simQldValue + Math.max(0, simCash);
+
+            history.push({
+                date: dateStr,
+                total: simTotal,
+                qld: simQldValue,
+                cash: Math.max(0, simCash)
+            });
+        }
+
+        saveHistorySnapshots(history);
+        updateChart(history);
+        showToast("샘플 시뮬레이션 추이 데이터가 로드되었습니다.");
+    }
+
+    function clearHistory() {
+        saveHistorySnapshots([]);
+        updateChart([]);
+        showToast("자산 기록이 초기화되었습니다.");
+    }
+
+    function updateChart(historyData) {
+        if (!dom.assetTrendChart) return;
+
+        const labels = historyData.map(h => h.date);
+        const totalData = historyData.map(h => h.total);
+        const qldData = historyData.map(h => h.qld);
+        const cashData = historyData.map(h => h.cash);
+
+        if (app.chart) {
+            app.chart.data.labels = labels;
+            app.chart.data.datasets[0].data = totalData;
+            app.chart.data.datasets[1].data = qldData;
+            app.chart.data.datasets[2].data = cashData;
+            app.chart.update();
+            return;
+        }
+
+        const ctx = dom.assetTrendChart.getContext("2d");
+        app.chart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: "총 자산",
+                        data: totalData,
+                        borderColor: "#4f46e5",
+                        backgroundColor: "rgba(79, 70, 229, 0.08)",
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: "QLD 평가액",
+                        data: qldData,
+                        borderColor: "#10b981",
+                        backgroundColor: "transparent",
+                        borderDash: [4, 4],
+                        tension: 0.35,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    },
+                    {
+                        label: "가용 현금",
+                        data: cashData,
+                        borderColor: "#f59e0b",
+                        backgroundColor: "transparent",
+                        borderDash: [2, 2],
+                        tension: 0.35,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false },
+                plugins: {
+                    legend: { position: "top", labels: { font: { family: "Inter, sans-serif", size: 12, weight: 600 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ": " + krw(context.raw);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+                    y: {
+                        grid: { color: "#f1f5f9" },
+                        ticks: {
+                            font: { size: 11 },
+                            callback: function(val) { return compactKrw(val); }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     function render() {
         const { qtyQld, avgPriceQld, cashWon, monthlyDcaWon, dcaMonth, disparitySold, milestoneLevel } = app.state;
         const { exchangeRate, qld, qqq } = app.market;
@@ -624,10 +812,9 @@
         const qldMdd = calculateMdd(qld);
         const qqqMdd = calculateMdd(qqq);
 
-        // 200일선 이격도(Disparity Index) 계산 (%)
         const qldDisparity = qld.sma200 > 0 ? (qld.price / qld.sma200) * 100 : 100;
 
-        // 히스테리시스 자동 리셋: 주가가 식어서 이격도가 120% 미만으로 떨어지면 익절 완료 플래그 자동 해제
+        // 주가가 식어서 120% 미만 진입 시 자동 완결 해제
         if (qldDisparity < 120 && disparitySold === 1) {
             app.state.disparitySold = 0;
             saveState();
@@ -673,8 +860,9 @@
             condition: `QLD MDD ≤ ${t.threshold}% (${t.pct * 100}%)`
         }));
 
+        // 버그 수정: 이격도 135% 이상 및 미완결 상태일 때만 익절 금액 계산
         const overboughtSellAmt = (qldDisparity >= 135 && disparitySold === 0) ? Math.round(qldValueKrw * 0.15) : 0;
-        const milestoneSellAmt = Math.round((qtyQld * avgPriceQld * exchangeRate) * 0.20);
+        const milestoneSellAmt = qldReturnPct >= milestoneLevel ? Math.round((qtyQld * avgPriceQld * exchangeRate) * 0.20) : 0;
 
         let active = { id: "dca", label: "정기 적립식 매수", amount: monthlyDcaWon, tone: "success", type: "BUY" };
         let showActionButton = false;
@@ -728,7 +916,6 @@
         else if (qldMdd <= -30) active = dynamicMDD[1];
         else if (qldMdd <= -15) active = dynamicMDD[0];
 
-        // 배너 UI 바인딩
         if (dom.signalBanner) dom.signalBanner.className = `signal-banner ${active.tone}`;
         if (dom.signalTitle) dom.signalTitle.textContent = active.label;
         if (dom.signalDescription) {
@@ -741,7 +928,6 @@
             else dom.signalShares.textContent = `QLD 약 ${sharesFor(active.amount).toLocaleString()}주 매수`;
         }
 
-        // 실행 완료 버튼 동적 바인딩
         if (dom.signalActionBox && dom.btnCompleteAction) {
             if (showActionButton && actionCallback) {
                 dom.signalActionBox.style.display = "block";
@@ -755,8 +941,8 @@
         const rows = [
             { id: "dca", label: "월 정기 매수", condition: `${dcaMonth}개월차 정기 집행`, amount: monthlyDcaWon, type: "BUY" },
             ...dynamicMDD,
-            { id: "sell_disparity", label: "200일선 이격도 과열 익절", condition: `이격도 ${qldDisparity.toFixed(1)}% (기준 ≥ 135%) · ${disparitySold === 1 ? '완결' : '미완결'}`, amount: disparitySold === 1 ? 0 : overboughtSellAmt, type: "SELL" },
-            { id: "sell_milestone", label: `마일스톤 익절 (목표 +${milestoneLevel}%)`, condition: `현재 수익률 ${qldReturnPct.toFixed(1)}% (목표 +${milestoneLevel}%)`, amount: qldReturnPct >= milestoneLevel ? milestoneSellAmt : 0, type: "SELL" },
+            { id: "sell_disparity", label: "200일선 이격도 과열 익절", condition: `이격도 ${qldDisparity.toFixed(1)}% (기준 ≥ 135%) · ${disparitySold === 1 ? '완결' : '미완결'}`, amount: overboughtSellAmt, type: "SELL" },
+            { id: "sell_milestone", label: `마일스톤 익절 (목표 +${milestoneLevel}%)`, condition: `현재 수익률 ${qldReturnPct.toFixed(1)}% (목표 +${milestoneLevel}%)`, amount: milestoneSellAmt, type: "SELL" },
             { id: "200sma_defense", label: "200일선 방어 리밸런싱", condition: "QQQ가 200일선 하회 시", amount: isQqqBear ? Math.round(qldValueKrw * 0.2) : 0, type: "SELL_DEFENSE" }
         ];
 
@@ -842,6 +1028,9 @@
         }
 
         if (dom.highSummary) dom.highSummary.textContent = `QLD 고점 $${qld.high52.toFixed(2)} · QQQ 고점 $${qqq.high52.toFixed(2)}`;
+
+        // 스냅샷 기록 및 차트 갱신
+        recordSnapshot(totalAssets, qldValueKrw, cashWon);
     }
 
     async function fetchTicker(ticker) {
@@ -922,12 +1111,18 @@
         cacheDom();
         loadState();
         ["qtyQld", "avgPriceQld", "cashWon", "monthlyDcaWon", "dcaMonth"].forEach(key => dom[key] && dom[key].addEventListener("input", readInputs));
+
+        // 기존 기록된 스냅샷 차트 렌더링
+        updateChart(getHistorySnapshots());
+
         render();
         refreshMarketData();
     }
 
     window.copySyncUrl = copySyncUrl;
     window.refreshMarketData = refreshMarketData;
+    window.populateSampleHistory = populateSampleHistory;
+    window.clearHistory = clearHistory;
     document.addEventListener("DOMContentLoaded", init);
 </script>
 </body>
